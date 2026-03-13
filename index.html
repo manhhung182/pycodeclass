@@ -7,693 +7,209 @@
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 :root {
-  --bg:       #f5f4f0;
-  --bg2:      #eeecea;
-  --bg3:      #e5e3de;
-  --surface:  #ffffff;
-  --border:   #d8d5cf;
-  --border2:  #c5c2bb;
-  --ink:      #1a1916;
-  --ink2:     #5a5750;
-  --ink3:     #9a9690;
-  --accent:   #2563eb;
-  --accent-l: #dbeafe;
-  --green:    #16a34a;
-  --green-l:  #dcfce7;
-  --red:      #dc2626;
-  --red-l:    #fee2e2;
-  --amber:    #d97706;
-  --amber-l:  #fef3c7;
-  --purple:   #7c3aed;
-  --purple-l: #ede9fe;
-  --mono:     'IBM Plex Mono', monospace;
-  --sans:     'Plus Jakarta Sans', sans-serif;
-  --r:        8px;
-  --r2:       12px;
-  --r3:       16px;
+  --bg:#f5f4f0; --bg2:#eeecea; --bg3:#e5e3de;
+  --surface:#fff; --border:#d8d5cf; --border2:#c5c2bb;
+  --ink:#1a1916; --ink2:#5a5750; --ink3:#9a9690;
+  --accent:#2563eb; --accent-l:#dbeafe;
+  --green:#16a34a; --green-l:#dcfce7;
+  --red:#dc2626; --red-l:#fee2e2;
+  --amber:#d97706; --amber-l:#fef3c7;
+  --purple:#7c3aed; --purple-l:#ede9fe;
+  --mono:'IBM Plex Mono',monospace;
+  --sans:'Plus Jakarta Sans',sans-serif;
+  --r:8px; --r2:12px; --r3:16px;
 }
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:var(--sans);background:var(--bg);color:var(--ink);min-height:100vh;font-size:14px;}
+.screen{display:none;} .screen.active{display:flex;}
 
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: var(--sans); background: var(--bg); color: var(--ink); min-height: 100vh; font-size: 14px; }
+/* LOADING */
+#screen-loading{min-height:100vh;align-items:center;justify-content:center;flex-direction:column;gap:16px;}
+.spinner{width:36px;height:36px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.loading-text{font-size:14px;color:var(--ink2);}
 
-/* ── SCREEN ROUTER ── */
-.screen { display: none; }
-.screen.active { display: flex; }
+/* CONFIG BANNER */
+.config-banner{background:var(--amber-l);border:2px solid var(--amber);border-radius:var(--r2);padding:20px 24px;margin:24px;font-size:14px;line-height:1.8;display:none;}
+.config-banner h3{color:var(--amber);font-size:16px;margin-bottom:8px;}
+.config-banner code{font-family:var(--mono);font-size:12px;background:rgba(0,0,0,.08);padding:2px 7px;border-radius:4px;}
 
-/* ══════════════════════════════════════
-   LOGIN
-══════════════════════════════════════ */
-#screen-login {
-  min-height: 100vh;
-  align-items: center;
-  justify-content: center;
-  background: var(--bg);
-  position: relative;
-  overflow: hidden;
-}
-#screen-login::before {
-  content: '';
-  position: absolute;
-  top: -120px; right: -120px;
-  width: 500px; height: 500px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(37,99,235,0.07) 0%, transparent 70%);
-  pointer-events: none;
-}
-#screen-login::after {
-  content: '';
-  position: absolute;
-  bottom: -100px; left: -80px;
-  width: 400px; height: 400px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(124,58,237,0.06) 0%, transparent 70%);
-  pointer-events: none;
-}
+/* LOGIN */
+#screen-login{min-height:100vh;align-items:center;justify-content:center;background:var(--bg);}
+.login-wrap{width:440px;}
+.brand{display:flex;align-items:center;gap:10px;margin-bottom:32px;}
+.brand-mark{width:42px;height:42px;background:var(--ink);border-radius:10px;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:16px;font-weight:600;color:white;letter-spacing:-1px;}
+.brand-name{font-size:22px;font-weight:800;}
+.brand-name span{color:var(--accent);}
+.login-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r3);padding:36px;box-shadow:0 4px 24px rgba(0,0,0,.06);}
+.login-card h2{font-size:20px;font-weight:700;margin-bottom:6px;}
+.login-card p{color:var(--ink2);font-size:13px;margin-bottom:28px;}
+.role-toggle{display:grid;grid-template-columns:1fr 1fr;background:var(--bg2);border-radius:var(--r);padding:4px;margin-bottom:24px;gap:4px;}
+.role-btn{padding:10px;border:none;border-radius:6px;background:transparent;font-family:var(--sans);font-size:13px;font-weight:600;color:var(--ink2);cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:6px;}
+.role-btn.active{background:var(--surface);color:var(--ink);box-shadow:0 1px 4px rgba(0,0,0,.08);}
+.form-group{margin-bottom:16px;}
+.form-label{display:block;font-size:12px;font-weight:600;color:var(--ink2);margin-bottom:6px;letter-spacing:.04em;text-transform:uppercase;}
+.form-input{width:100%;padding:11px 14px;background:var(--bg);border:1px solid var(--border);border-radius:var(--r);font-family:var(--sans);font-size:14px;color:var(--ink);outline:none;transition:border-color .15s,box-shadow .15s;}
+.form-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(37,99,235,.1);}
+.btn-primary{width:100%;padding:12px;background:var(--ink);border:none;border-radius:var(--r);color:white;font-family:var(--sans);font-size:14px;font-weight:700;cursor:pointer;transition:background .15s;margin-top:4px;}
+.btn-primary:hover{background:#2d2c29;}
+.hint-box{margin-top:16px;padding:12px 14px;background:var(--bg2);border-radius:var(--r);font-size:12px;color:var(--ink3);}
+.hint-box strong{color:var(--ink2);}
+.error-msg{color:var(--red);font-size:13px;margin-top:10px;text-align:center;display:none;}
 
-.login-wrap {
-  width: 460px;
-  position: relative;
-  z-index: 1;
-}
-.brand {
-  display: flex; align-items: center; gap: 10px;
-  margin-bottom: 36px;
-}
-.brand-mark {
-  width: 42px; height: 42px;
-  background: var(--ink);
-  border-radius: 10px;
-  display: flex; align-items: center; justify-content: center;
-  font-family: var(--mono); font-size: 16px; font-weight: 600;
-  color: white; letter-spacing: -1px;
-}
-.brand-name { font-size: 22px; font-weight: 800; color: var(--ink); }
-.brand-name span { color: var(--accent); }
+/* APP LAYOUT */
+.app-layout{min-height:100vh;flex-direction:column;}
+.topnav{background:var(--surface);border-bottom:1px solid var(--border);padding:0 28px;height:56px;display:flex;align-items:center;gap:16px;position:sticky;top:0;z-index:100;}
+.topnav-brand{display:flex;align-items:center;gap:8px;}
+.topnav-brand .brand-mark{width:30px;height:30px;font-size:11px;border-radius:7px;}
+.topnav-brand .brand-name{font-size:16px;font-weight:800;}
+.topnav-tabs{display:flex;gap:2px;margin-left:24px;}
+.tab{padding:6px 14px;border-radius:var(--r);font-size:13px;font-weight:600;color:var(--ink2);cursor:pointer;border:none;background:transparent;font-family:var(--sans);transition:all .15s;}
+.tab:hover{background:var(--bg2);color:var(--ink);}
+.tab.active{background:var(--bg2);color:var(--ink);}
+.topnav-right{margin-left:auto;display:flex;align-items:center;gap:10px;}
+.user-chip{display:flex;align-items:center;gap:8px;padding:5px 10px 5px 5px;background:var(--bg2);border-radius:20px;font-size:12px;font-weight:600;}
+.user-avatar{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:white;}
+.btn-sm{padding:6px 12px;border:1px solid var(--border2);border-radius:var(--r);background:transparent;font-family:var(--sans);font-size:12px;font-weight:600;color:var(--ink2);cursor:pointer;transition:all .15s;}
+.btn-sm:hover{border-color:var(--ink);color:var(--ink);}
+.app-body{flex:1;padding:24px 28px;}
+.page{display:none;} .page.active{display:block;}
+.page-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px;}
+.page-title{font-size:22px;font-weight:800;}
+.page-sub{font-size:13px;color:var(--ink2);margin-top:3px;}
+.btn-action{padding:10px 18px;background:var(--ink);border:none;border-radius:var(--r);color:white;font-family:var(--sans);font-size:13px;font-weight:700;cursor:pointer;transition:background .15s;display:flex;align-items:center;gap:6px;white-space:nowrap;}
+.btn-action:hover{background:#2d2c29;}
+.btn-action.green{background:var(--green);} .btn-action.green:hover{background:#15803d;}
+.btn-action.blue{background:var(--accent);} .btn-action.blue:hover{background:#1d4ed8;}
+.btn-ghost{padding:8px 14px;border:1px solid var(--border);border-radius:var(--r);background:transparent;font-family:var(--sans);font-size:13px;font-weight:600;color:var(--ink2);cursor:pointer;transition:all .15s;}
+.btn-ghost:hover{border-color:var(--border2);color:var(--ink);}
 
-.login-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--r3);
-  padding: 36px;
-  box-shadow: 0 4px 24px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04);
-}
-.login-card h2 { font-size: 20px; font-weight: 700; margin-bottom: 6px; }
-.login-card p { color: var(--ink2); font-size: 13px; margin-bottom: 28px; }
+/* SESSIONS */
+.session-grid{display:flex;flex-direction:column;gap:12px;}
+.session-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);padding:18px 20px;display:flex;align-items:center;gap:16px;transition:border-color .15s,box-shadow .15s;cursor:pointer;}
+.session-card:hover{border-color:var(--border2);box-shadow:0 2px 8px rgba(0,0,0,.05);}
+.session-card.live{border-color:var(--green);}
+.session-num{width:44px;height:44px;border-radius:10px;background:var(--bg2);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:15px;font-weight:600;flex-shrink:0;}
+.session-info{flex:1;}
+.session-title{font-weight:700;font-size:15px;}
+.session-meta{font-size:12px;color:var(--ink2);margin-top:3px;}
+.status-pill{padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;}
+.status-live{background:var(--green-l);color:var(--green);}
+.status-done{background:var(--bg2);color:var(--ink3);}
+.status-draft{background:var(--amber-l);color:var(--amber);}
 
-.role-toggle {
-  display: grid; grid-template-columns: 1fr 1fr;
-  background: var(--bg2);
-  border-radius: var(--r);
-  padding: 4px;
-  margin-bottom: 24px;
-  gap: 4px;
-}
-.role-btn {
-  padding: 10px;
-  border: none;
-  border-radius: 6px;
-  background: transparent;
-  font-family: var(--sans);
-  font-size: 13px; font-weight: 600;
-  color: var(--ink2);
-  cursor: pointer;
-  transition: all 0.15s;
-  display: flex; align-items: center; justify-content: center; gap: 6px;
-}
-.role-btn.active {
-  background: var(--surface);
-  color: var(--ink);
-  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
-}
+/* MONITOR */
+.monitor-header{background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);padding:16px 20px;margin-bottom:20px;display:flex;align-items:center;gap:20px;}
+.live-dot{width:10px;height:10px;border-radius:50%;background:var(--green);animation:blink 1.5s ease-in-out infinite;flex-shrink:0;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+.monitor-stats{display:flex;gap:24px;margin-left:auto;}
+.mstat{text-align:center;}
+.mstat-val{font-size:22px;font-weight:800;font-family:var(--mono);}
+.mstat-label{font-size:11px;color:var(--ink2);text-transform:uppercase;letter-spacing:.06em;}
+.student-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;}
+.smc{background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);padding:14px 16px;position:relative;overflow:hidden;}
+.smc::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;}
+.smc.active::before{background:var(--green);}
+.smc.idle::before{background:var(--amber);}
+.smc.away::before{background:var(--border2);}
+.smc-top{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+.smc-avatar{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:white;flex-shrink:0;}
+.smc-name{font-size:13px;font-weight:700;}
+.smc-id{font-size:11px;color:var(--ink3);font-family:var(--mono);}
+.smc-status{margin-left:auto;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;}
+.smc-status.active{color:var(--green);} .smc-status.idle{color:var(--amber);} .smc-status.away{color:var(--ink3);}
+.task-progress{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--ink2);margin-bottom:4px;}
+.tp-label{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.tp-bar{width:60px;height:4px;background:var(--bg3);border-radius:2px;flex-shrink:0;overflow:hidden;}
+.tp-fill{height:100%;border-radius:2px;transition:width .4s;}
+.tp-pct{font-family:var(--mono);font-size:10px;color:var(--ink3);width:28px;text-align:right;}
 
-.form-group { margin-bottom: 16px; }
-.form-label { display: block; font-size: 12px; font-weight: 600; color: var(--ink2); margin-bottom: 6px; letter-spacing: 0.04em; text-transform: uppercase; }
-.form-input {
-  width: 100%;
-  padding: 11px 14px;
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: var(--r);
-  font-family: var(--sans); font-size: 14px; color: var(--ink);
-  outline: none; transition: border-color 0.15s, box-shadow 0.15s;
-}
-.form-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+/* REPORT */
+.report-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px;}
+.report-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);padding:16px;}
+.rc-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--ink3);margin-bottom:8px;}
+.rc-val{font-size:28px;font-weight:800;font-family:var(--mono);}
+.rc-val.green{color:var(--green);} .rc-val.amber{color:var(--amber);} .rc-val.red{color:var(--red);}
+.rc-sub{font-size:12px;color:var(--ink3);margin-top:4px;}
+.table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);overflow:hidden;}
+.rtable{width:100%;border-collapse:collapse;}
+.rtable th{padding:11px 16px;text-align:left;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--ink3);background:var(--bg2);border-bottom:1px solid var(--border);}
+.rtable td{padding:13px 16px;border-bottom:1px solid var(--border);font-size:13px;color:var(--ink2);}
+.rtable tr:last-child td{border-bottom:none;}
+.rtable tr:hover td{background:var(--bg);}
+.td-name{font-weight:700;color:var(--ink);}
+.chip{display:inline-flex;align-items:center;padding:3px 9px;border-radius:20px;font-family:var(--mono);font-size:12px;font-weight:700;}
+.chip-green{background:var(--green-l);color:var(--green);} .chip-amber{background:var(--amber-l);color:var(--amber);} .chip-red{background:var(--red-l);color:var(--red);} .chip-gray{background:var(--bg2);color:var(--ink3);}
+.tdots{display:flex;gap:4px;}
+.tdot{width:20px;height:20px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;}
+.tdot-done{background:var(--green-l);color:var(--green);} .tdot-part{background:var(--amber-l);color:var(--amber);} .tdot-none{background:var(--bg2);color:var(--ink3);}
 
-.btn-primary {
-  width: 100%; padding: 12px;
-  background: var(--ink);
-  border: none; border-radius: var(--r);
-  color: white; font-family: var(--sans);
-  font-size: 14px; font-weight: 700;
-  cursor: pointer; transition: background 0.15s, transform 0.1s;
-  margin-top: 4px;
-}
-.btn-primary:hover { background: #2d2c29; }
-.btn-primary:active { transform: scale(0.99); }
+/* MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:200;align-items:center;justify-content:center;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--surface);border-radius:var(--r3);width:560px;max-height:85vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.15);}
+.modal-header{padding:20px 24px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.modal-title{font-size:17px;font-weight:800;}
+.modal-close{width:30px;height:30px;border:1px solid var(--border);border-radius:var(--r);background:transparent;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;color:var(--ink2);}
+.modal-close:hover{background:var(--bg2);}
+.modal-body{padding:20px 24px;}
+.modal-footer{padding:16px 24px;border-top:1px solid var(--border);display:flex;gap:10px;justify-content:flex-end;}
+.task-builder{display:flex;flex-direction:column;gap:10px;margin-top:12px;}
+.task-item{background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px;display:flex;align-items:flex-start;gap:10px;}
+.task-item-body{flex:1;}
 
-.hint-box {
-  margin-top: 16px;
-  padding: 12px 14px;
-  background: var(--bg2);
-  border-radius: var(--r);
-  font-size: 12px; color: var(--ink3);
-}
-.hint-box strong { color: var(--ink2); }
+/* STUDENT */
+.today-banner{background:var(--ink);border-radius:var(--r2);padding:20px 24px;margin-bottom:20px;display:flex;align-items:center;gap:16px;color:white;}
+.today-icon{font-size:32px;}
+.today-title{font-size:18px;font-weight:800;}
+.today-sub{font-size:13px;opacity:.6;margin-top:2px;}
+.today-badge{margin-left:auto;background:rgba(255,255,255,.15);border-radius:20px;padding:5px 12px;font-size:12px;font-weight:700;}
+.sv-progress{background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);padding:16px 20px;margin-bottom:20px;display:flex;align-items:center;gap:16px;}
+.svp-bar{flex:1;height:8px;background:var(--bg3);border-radius:4px;overflow:hidden;}
+.svp-fill{height:100%;background:var(--green);border-radius:4px;transition:width .5s;}
+.task-cards{display:flex;flex-direction:column;gap:12px;}
+.task-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);overflow:hidden;}
+.tc-header{padding:14px 18px;display:flex;align-items:center;gap:14px;cursor:pointer;}
+.tc-num{width:34px;height:34px;border-radius:var(--r);background:var(--bg2);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:13px;font-weight:700;flex-shrink:0;}
+.tc-num.done{background:var(--green-l);color:var(--green);}
+.tc-title{font-weight:700;font-size:14px;flex:1;}
+.tc-type{font-size:11px;font-weight:700;padding:3px 8px;border-radius:4px;text-transform:uppercase;letter-spacing:.04em;}
+.tc-type.code{background:var(--purple-l);color:var(--purple);}
+.tc-type.upload{background:var(--accent-l);color:var(--accent);}
+.tc-body{display:none;padding:18px;border-top:1px solid var(--border);}
+.tc-body.open{display:block;}
+.task-desc{background:var(--bg);border-radius:var(--r);padding:14px;font-size:13px;line-height:1.7;color:var(--ink2);margin-bottom:16px;border-left:3px solid var(--accent);}
+.code-wrap{border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:12px;}
+.code-toolbar{background:var(--bg2);padding:8px 12px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--border);}
+.code-lang{font-family:var(--mono);font-size:11px;color:var(--ink3);}
+.code-textarea{width:100%;min-height:180px;background:#1e1e2e;border:none;outline:none;resize:vertical;padding:16px;font-family:var(--mono);font-size:13px;color:#cdd6f4;line-height:1.7;tab-size:4;}
+.output-box{background:#1e1e2e;border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;font-family:var(--mono);font-size:12px;color:#a6e3a1;line-height:1.6;min-height:50px;margin-bottom:12px;white-space:pre-wrap;}
+.submit-row{display:flex;gap:10px;align-items:center;}
+.submit-note{font-size:12px;color:var(--ink3);}
+.student-upload{border:2px dashed var(--border2);border-radius:var(--r);padding:20px;text-align:center;cursor:pointer;transition:all .15s;margin-bottom:12px;}
+.student-upload:hover{border-color:var(--accent);background:var(--accent-l);}
+.student-upload.uploaded{border-color:var(--green);background:var(--green-l);border-style:solid;cursor:default;}
+.no-session{background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);padding:48px;text-align:center;}
+.no-session-icon{font-size:48px;margin-bottom:16px;}
+.no-session-title{font-size:18px;font-weight:700;margin-bottom:8px;}
+.no-session-sub{font-size:14px;color:var(--ink2);}
 
-/* ══════════════════════════════════════
-   SHARED LAYOUT
-══════════════════════════════════════ */
-.app-layout {
-  min-height: 100vh;
-  flex-direction: column;
-}
-
-.topnav {
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
-  padding: 0 28px;
-  height: 56px;
-  display: flex; align-items: center;
-  gap: 16px;
-  position: sticky; top: 0; z-index: 100;
-}
-.topnav-brand { display: flex; align-items: center; gap: 8px; }
-.topnav-brand .brand-mark { width: 30px; height: 30px; font-size: 11px; border-radius: 7px; }
-.topnav-brand .brand-name { font-size: 16px; font-weight: 800; }
-
-.topnav-tabs { display: flex; gap: 2px; margin-left: 24px; }
-.tab {
-  padding: 6px 14px;
-  border-radius: var(--r);
-  font-size: 13px; font-weight: 600;
-  color: var(--ink2); cursor: pointer;
-  border: none; background: transparent;
-  font-family: var(--sans);
-  transition: all 0.15s;
-}
-.tab:hover { background: var(--bg2); color: var(--ink); }
-.tab.active { background: var(--bg2); color: var(--ink); }
-
-.topnav-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
-.user-chip {
-  display: flex; align-items: center; gap: 8px;
-  padding: 5px 10px 5px 5px;
-  background: var(--bg2);
-  border-radius: 20px;
-  font-size: 12px; font-weight: 600;
-}
-.user-avatar {
-  width: 26px; height: 26px;
-  border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 11px; font-weight: 700; color: white;
-}
-.btn-sm {
-  padding: 6px 12px;
-  border: 1px solid var(--border2);
-  border-radius: var(--r);
-  background: transparent;
-  font-family: var(--sans); font-size: 12px; font-weight: 600;
-  color: var(--ink2); cursor: pointer;
-  transition: all 0.15s;
-}
-.btn-sm:hover { border-color: var(--ink); color: var(--ink); }
-
-.app-body { flex: 1; padding: 24px 28px; }
-
-/* ══════════════════════════════════════
-   TEACHER — SESSIONS PAGE
-══════════════════════════════════════ */
-.page { display: none; }
-.page.active { display: block; }
-
-.page-header {
-  display: flex; align-items: flex-start; justify-content: space-between;
-  margin-bottom: 24px;
-}
-.page-title { font-size: 22px; font-weight: 800; }
-.page-sub { font-size: 13px; color: var(--ink2); margin-top: 3px; }
-
-.btn-action {
-  padding: 10px 18px;
-  background: var(--ink);
-  border: none; border-radius: var(--r);
-  color: white; font-family: var(--sans);
-  font-size: 13px; font-weight: 700;
-  cursor: pointer; transition: background 0.15s;
-  display: flex; align-items: center; gap: 6px;
-  white-space: nowrap;
-}
-.btn-action:hover { background: #2d2c29; }
-.btn-action.green { background: var(--green); }
-.btn-action.green:hover { background: #15803d; }
-.btn-action.blue { background: var(--accent); }
-.btn-action.blue:hover { background: #1d4ed8; }
-
-/* Session cards */
-.session-grid { display: flex; flex-direction: column; gap: 12px; }
-.session-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--r2);
-  padding: 18px 20px;
-  display: flex; align-items: center; gap: 16px;
-  transition: border-color 0.15s, box-shadow 0.15s;
-  cursor: pointer;
-}
-.session-card:hover { border-color: var(--border2); box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
-.session-card.live { border-color: var(--green); }
-
-.session-num {
-  width: 44px; height: 44px;
-  border-radius: 10px;
-  background: var(--bg2);
-  display: flex; align-items: center; justify-content: center;
-  font-family: var(--mono); font-size: 16px; font-weight: 600;
-  flex-shrink: 0;
-}
-.session-info { flex: 1; }
-.session-title { font-weight: 700; font-size: 15px; }
-.session-meta { font-size: 12px; color: var(--ink2); margin-top: 3px; }
-.session-tasks { font-size: 12px; color: var(--ink3); margin-top: 4px; }
-
-.status-pill {
-  padding: 4px 10px;
-  border-radius: 20px;
-  font-size: 11px; font-weight: 700;
-  text-transform: uppercase; letter-spacing: 0.06em;
-}
-.status-live { background: var(--green-l); color: var(--green); }
-.status-done { background: var(--bg2); color: var(--ink3); }
-.status-draft { background: var(--amber-l); color: var(--amber); }
-
-/* ══════════════════════════════════════
-   TEACHER — LIVE MONITOR
-══════════════════════════════════════ */
-.monitor-header {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--r2);
-  padding: 16px 20px;
-  margin-bottom: 20px;
-  display: flex; align-items: center; gap: 20px;
-}
-.live-dot {
-  width: 10px; height: 10px;
-  border-radius: 50%;
-  background: var(--green);
-  animation: blink 1.5s ease-in-out infinite;
-  flex-shrink: 0;
-}
-@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
-
-.monitor-stats { display: flex; gap: 24px; margin-left: auto; }
-.mstat { text-align: center; }
-.mstat-val { font-size: 22px; font-weight: 800; font-family: var(--mono); }
-.mstat-label { font-size: 11px; color: var(--ink2); text-transform: uppercase; letter-spacing: 0.06em; }
-.mstat-val.green { color: var(--green); }
-.mstat-val.amber { color: var(--amber); }
-.mstat-val.red { color: var(--red); }
-
-.student-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 12px;
-}
-.student-monitor-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--r2);
-  padding: 14px 16px;
-  transition: all 0.2s;
-  cursor: pointer;
-  position: relative;
-  overflow: hidden;
-}
-.student-monitor-card::before {
-  content: '';
-  position: absolute;
-  left: 0; top: 0; bottom: 0;
-  width: 3px;
-}
-.student-monitor-card.st-active::before { background: var(--green); }
-.student-monitor-card.st-idle::before { background: var(--amber); }
-.student-monitor-card.st-notstarted::before { background: var(--border2); }
-.student-monitor-card.st-submitted::before { background: var(--accent); }
-
-.smc-top { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
-.smc-avatar {
-  width: 32px; height: 32px;
-  border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 11px; font-weight: 700; color: white;
-  flex-shrink: 0;
-}
-.smc-name { font-size: 13px; font-weight: 700; }
-.smc-id { font-size: 11px; color: var(--ink3); font-family: var(--mono); }
-.smc-status {
-  margin-left: auto;
-  font-size: 10px; font-weight: 700;
-  text-transform: uppercase; letter-spacing: 0.06em;
-}
-.smc-status.active { color: var(--green); }
-.smc-status.idle { color: var(--amber); }
-.smc-status.notstarted { color: var(--ink3); }
-.smc-status.submitted { color: var(--accent); }
-
-.progress-tasks { display: flex; flex-direction: column; gap: 5px; }
-.task-progress {
-  display: flex; align-items: center; gap: 8px;
-  font-size: 11px; color: var(--ink2);
-}
-.task-progress-label { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.task-bar-bg { width: 60px; height: 4px; background: var(--bg3); border-radius: 2px; flex-shrink: 0; }
-.task-bar-fill { height: 100%; border-radius: 2px; transition: width 0.4s; }
-.task-pct { font-family: var(--mono); font-size: 10px; color: var(--ink3); width: 28px; text-align: right; }
-
-/* ══════════════════════════════════════
-   TEACHER — CREATE SESSION MODAL
-══════════════════════════════════════ */
-.modal-overlay {
-  display: none;
-  position: fixed; inset: 0;
-  background: rgba(0,0,0,0.35);
-  z-index: 200;
-  align-items: center; justify-content: center;
-}
-.modal-overlay.open { display: flex; }
-.modal {
-  background: var(--surface);
-  border-radius: var(--r3);
-  width: 560px;
-  max-height: 85vh;
-  overflow-y: auto;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.15);
-}
-.modal-header {
-  padding: 20px 24px 16px;
-  border-bottom: 1px solid var(--border);
-  display: flex; align-items: center; justify-content: space-between;
-}
-.modal-title { font-size: 17px; font-weight: 800; }
-.modal-close {
-  width: 30px; height: 30px;
-  border: 1px solid var(--border);
-  border-radius: var(--r);
-  background: transparent;
-  cursor: pointer; font-size: 16px;
-  display: flex; align-items: center; justify-content: center;
-  color: var(--ink2); transition: all 0.15s;
-}
-.modal-close:hover { background: var(--bg2); color: var(--ink); }
-.modal-body { padding: 20px 24px; }
-.modal-footer { padding: 16px 24px; border-top: 1px solid var(--border); display: flex; gap: 10px; justify-content: flex-end; }
-
-.task-builder { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
-.task-item {
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: var(--r);
-  padding: 12px 14px;
-  display: flex; align-items: flex-start; gap: 10px;
-}
-.task-item-body { flex: 1; }
-.task-label { font-size: 12px; font-weight: 700; color: var(--ink2); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.04em; }
-
-.upload-zone {
-  border: 2px dashed var(--border2);
-  border-radius: var(--r);
-  padding: 24px;
-  text-align: center;
-  cursor: pointer;
-  transition: all 0.15s;
-  background: var(--bg);
-}
-.upload-zone:hover { border-color: var(--accent); background: var(--accent-l); }
-.upload-zone.has-file { border-color: var(--green); background: var(--green-l); border-style: solid; }
-.upload-zone-icon { font-size: 28px; margin-bottom: 8px; }
-.upload-zone-text { font-size: 13px; font-weight: 600; color: var(--ink2); }
-.upload-zone-sub { font-size: 11px; color: var(--ink3); margin-top: 3px; }
-
-.btn-ghost {
-  padding: 8px 14px;
-  border: 1px solid var(--border);
-  border-radius: var(--r);
-  background: transparent;
-  font-family: var(--sans); font-size: 13px; font-weight: 600;
-  color: var(--ink2); cursor: pointer;
-  transition: all 0.15s;
-}
-.btn-ghost:hover { border-color: var(--border2); color: var(--ink); }
-
-/* ══════════════════════════════════════
-   TEACHER — REPORT
-══════════════════════════════════════ */
-.report-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 24px; }
-.report-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--r2);
-  padding: 16px;
-}
-.rc-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink3); margin-bottom: 8px; }
-.rc-val { font-size: 28px; font-weight: 800; font-family: var(--mono); }
-.rc-val.green { color: var(--green); }
-.rc-val.amber { color: var(--amber); }
-.rc-val.red { color: var(--red); }
-.rc-sub { font-size: 12px; color: var(--ink3); margin-top: 4px; }
-
-.report-table-wrap {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--r2);
-  overflow: hidden;
-}
-.rtable { width: 100%; border-collapse: collapse; }
-.rtable th {
-  padding: 11px 16px; text-align: left;
-  font-size: 11px; font-weight: 700; text-transform: uppercase;
-  letter-spacing: 0.06em; color: var(--ink3);
-  background: var(--bg2);
-  border-bottom: 1px solid var(--border);
-}
-.rtable td {
-  padding: 13px 16px;
-  border-bottom: 1px solid var(--border);
-  font-size: 13px; color: var(--ink2);
-}
-.rtable tr:last-child td { border-bottom: none; }
-.rtable tr:hover td { background: var(--bg); }
-.td-name { font-weight: 700; color: var(--ink); }
-.score-chip {
-  display: inline-flex; align-items: center;
-  padding: 3px 9px; border-radius: 20px;
-  font-family: var(--mono); font-size: 12px; font-weight: 700;
-}
-.chip-green { background: var(--green-l); color: var(--green); }
-.chip-amber { background: var(--amber-l); color: var(--amber); }
-.chip-red { background: var(--red-l); color: var(--red); }
-.chip-gray { background: var(--bg2); color: var(--ink3); }
-
-.task-dots { display: flex; gap: 4px; }
-.tdot {
-  width: 20px; height: 20px; border-radius: 4px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 10px; font-weight: 700;
-}
-.tdot-done { background: var(--green-l); color: var(--green); }
-.tdot-partial { background: var(--amber-l); color: var(--amber); }
-.tdot-none { background: var(--bg2); color: var(--ink3); }
-
-/* Export btn */
-.export-bar {
-  display: flex; align-items: center; gap: 10px; margin-bottom: 16px;
-}
-
-/* ══════════════════════════════════════
-   STUDENT — TASKS
-══════════════════════════════════════ */
-.today-banner {
-  background: var(--ink);
-  border-radius: var(--r2);
-  padding: 20px 24px;
-  margin-bottom: 20px;
-  display: flex; align-items: center; gap: 16px;
-  color: white;
-}
-.today-icon { font-size: 32px; }
-.today-title { font-size: 18px; font-weight: 800; }
-.today-sub { font-size: 13px; opacity: 0.6; margin-top: 2px; }
-.today-badge {
-  margin-left: auto;
-  background: rgba(255,255,255,0.15);
-  border-radius: 20px; padding: 5px 12px;
-  font-size: 12px; font-weight: 700;
-}
-
-.task-cards { display: flex; flex-direction: column; gap: 12px; }
-.task-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--r2);
-  overflow: hidden;
-  transition: box-shadow 0.15s;
-}
-.task-card:hover { box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
-
-.tc-header {
-  padding: 14px 18px;
-  display: flex; align-items: center; gap: 14px;
-  border-bottom: 1px solid var(--border);
-  cursor: pointer;
-}
-.tc-num {
-  width: 34px; height: 34px;
-  border-radius: var(--r);
-  background: var(--bg2);
-  display: flex; align-items: center; justify-content: center;
-  font-family: var(--mono); font-size: 13px; font-weight: 700;
-  flex-shrink: 0;
-}
-.tc-num.done { background: var(--green-l); color: var(--green); }
-.tc-title { font-weight: 700; font-size: 14px; flex: 1; }
-.tc-type {
-  font-size: 11px; font-weight: 700;
-  padding: 3px 8px; border-radius: 4px;
-  text-transform: uppercase; letter-spacing: 0.04em;
-}
-.tc-type.code { background: var(--purple-l); color: var(--purple); }
-.tc-type.upload { background: var(--accent-l); color: var(--accent); }
-
-.tc-body { display: none; padding: 18px; }
-.tc-body.open { display: block; }
-
-.task-desc {
-  background: var(--bg);
-  border-radius: var(--r);
-  padding: 14px;
-  font-size: 13px; line-height: 1.7; color: var(--ink2);
-  margin-bottom: 16px;
-  border-left: 3px solid var(--accent);
-}
-
-/* Code editor in student */
-.code-editor-wrap {
-  border: 1px solid var(--border);
-  border-radius: var(--r);
-  overflow: hidden;
-  margin-bottom: 12px;
-}
-.code-toolbar {
-  background: var(--bg2);
-  padding: 8px 12px;
-  display: flex; align-items: center; gap: 8px;
-  border-bottom: 1px solid var(--border);
-}
-.code-lang { font-family: var(--mono); font-size: 11px; color: var(--ink3); }
-.code-toolbar-right { margin-left: auto; display: flex; gap: 6px; }
-.code-textarea {
-  width: 100%;
-  min-height: 180px;
-  background: #1e1e2e;
-  border: none; outline: none; resize: vertical;
-  padding: 16px;
-  font-family: var(--mono); font-size: 13px;
-  color: #cdd6f4; line-height: 1.7;
-  tab-size: 4;
-}
-
-.output-box {
-  background: #1e1e2e;
-  border: 1px solid var(--border);
-  border-radius: var(--r);
-  padding: 14px 16px;
-  font-family: var(--mono); font-size: 12px;
-  color: #a6e3a1; line-height: 1.6;
-  min-height: 60px;
-  margin-bottom: 12px;
-  white-space: pre-wrap;
-}
-.output-box.error { color: #f38ba8; }
-
-/* Upload area in student */
-.student-upload {
-  border: 2px dashed var(--border2);
-  border-radius: var(--r);
-  padding: 20px;
-  text-align: center;
-  cursor: pointer;
-  transition: all 0.15s;
-  margin-bottom: 12px;
-}
-.student-upload:hover { border-color: var(--accent); background: var(--accent-l); }
-.student-upload.uploaded { border-color: var(--green); background: var(--green-l); border-style: solid; }
-
-.submit-row { display: flex; gap: 10px; align-items: center; }
-.submit-note { font-size: 12px; color: var(--ink3); }
-
-/* Progress bar (student header) */
-.student-progress {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--r2);
-  padding: 16px 20px;
-  margin-bottom: 20px;
-  display: flex; align-items: center; gap: 16px;
-}
-.sp-label { font-size: 13px; font-weight: 700; }
-.sp-bar-bg { flex: 1; height: 8px; background: var(--bg3); border-radius: 4px; overflow: hidden; }
-.sp-bar-fill { height: 100%; background: var(--green); border-radius: 4px; transition: width 0.5s; }
-.sp-pct { font-family: var(--mono); font-size: 14px; font-weight: 700; color: var(--green); min-width: 40px; text-align: right; }
-
-/* Notification toast */
-.toast {
-  position: fixed; bottom: 24px; right: 24px;
-  background: var(--ink);
-  color: white;
-  padding: 12px 18px;
-  border-radius: var(--r);
-  font-size: 13px; font-weight: 600;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.2);
-  transform: translateY(80px); opacity: 0;
-  transition: all 0.3s;
-  z-index: 999;
-}
-.toast.show { transform: translateY(0); opacity: 1; }
-.toast.success { background: var(--green); }
-.toast.error { background: var(--red); }
-
-/* Session selector for student */
-.no-session {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--r2);
-  padding: 48px;
-  text-align: center;
-}
-.no-session-icon { font-size: 48px; margin-bottom: 16px; }
-.no-session-title { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
-.no-session-sub { font-size: 14px; color: var(--ink2); }
-
-/* Tabs under nav */
-.sub-tabs { display: flex; gap: 2px; border-bottom: 1px solid var(--border); margin-bottom: 24px; }
-.sub-tab {
-  padding: 10px 16px;
-  font-size: 13px; font-weight: 600; color: var(--ink2);
-  cursor: pointer; border: none; background: transparent;
-  font-family: var(--sans);
-  border-bottom: 2px solid transparent;
-  margin-bottom: -1px;
-  transition: all 0.15s;
-}
-.sub-tab.active { color: var(--ink); border-bottom-color: var(--ink); }
-.sub-tab:hover:not(.active) { color: var(--ink); }
+/* TOAST */
+.toast{position:fixed;bottom:24px;right:24px;background:var(--ink);color:white;padding:12px 18px;border-radius:var(--r);font-size:13px;font-weight:600;box-shadow:0 8px 32px rgba(0,0,0,.2);transform:translateY(80px);opacity:0;transition:all .3s;z-index:999;}
+.toast.show{transform:translateY(0);opacity:1;}
+.toast.success{background:var(--green);} .toast.error{background:var(--red);}
 </style>
 </head>
 <body>
 
-<!-- ══ LOGIN ══ -->
-<div id="screen-login" class="screen active">
+<!-- LOADING -->
+<div id="screen-loading" class="screen active">
+  <div class="spinner"></div>
+  <div class="loading-text" id="loading-text">Đang khởi động...</div>
+</div>
+
+<!-- LOGIN -->
+<div id="screen-login" class="screen">
   <div class="login-wrap">
     <div class="brand">
       <div class="brand-mark">&gt;_</div>
@@ -708,22 +224,23 @@ body { font-family: var(--sans); background: var(--bg); color: var(--ink); min-h
       </div>
       <div class="form-group">
         <label class="form-label" id="login-id-label">Tài khoản giáo viên</label>
-        <input class="form-input" id="login-id" placeholder="VD: gv_nguyenvan" />
+        <input class="form-input" id="login-id" placeholder="VD: gv_nguyenvan" onkeydown="if(event.key==='Enter')doLogin()"/>
       </div>
       <div class="form-group">
         <label class="form-label">Mật khẩu</label>
-        <input class="form-input" type="password" id="login-pw" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()" />
+        <input class="form-input" type="password" id="login-pw" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"/>
       </div>
       <button class="btn-primary" onclick="doLogin()">Đăng nhập →</button>
-      <div class="hint-box" id="login-hint">
-        <strong>Demo giáo viên:</strong> gv_nguyenvan / 123456<br>
-        <strong>Demo sinh viên:</strong> sv001 / abc123 (hoặc sv002, sv003...)
+      <div class="error-msg" id="login-error">Sai tài khoản hoặc mật khẩu!</div>
+      <div class="hint-box">
+        <strong>Demo GV:</strong> gv_nguyenvan / 123456 &nbsp;|&nbsp;
+        <strong>Demo SV:</strong> sv001 đến sv006 / abc123
       </div>
     </div>
   </div>
 </div>
 
-<!-- ══ TEACHER APP ══ -->
+<!-- TEACHER -->
 <div id="screen-teacher" class="screen app-layout">
   <nav class="topnav">
     <div class="topnav-brand">
@@ -744,49 +261,28 @@ body { font-family: var(--sans); background: var(--bg); color: var(--ink); min-h
     </div>
   </nav>
   <div class="app-body">
-
-    <!-- Sessions page -->
     <div id="t-page-sessions" class="page active">
       <div class="page-header">
-        <div>
-          <div class="page-title">Quản lý buổi học</div>
-          <div class="page-sub">Tạo và theo dõi các buổi thực hành</div>
-        </div>
-        <button class="btn-action" onclick="openCreateModal()">+ Tạo buổi học mới</button>
+        <div><div class="page-title">Quản lý buổi học</div><div class="page-sub">Tạo và theo dõi các buổi thực hành</div></div>
+        <button class="btn-action" onclick="openModal()">+ Tạo buổi học mới</button>
       </div>
-      <div class="session-grid" id="session-list-teacher"></div>
+      <div class="session-grid" id="session-list"></div>
     </div>
-
-    <!-- Monitor page -->
     <div id="t-page-monitor" class="page">
       <div class="page-header">
-        <div>
-          <div class="page-title">Live Monitor</div>
-          <div class="page-sub">Theo dõi thực hành sinh viên theo thời gian thực</div>
-        </div>
+        <div><div class="page-title">Live Monitor</div><div class="page-sub">Tự động cập nhật mỗi 15 giây</div></div>
         <div style="display:flex;gap:8px">
-          <select class="form-input" style="width:auto;padding:8px 12px" id="monitor-session-sel" onchange="renderMonitor()">
-            <option value="">— Chọn buổi học —</option>
-          </select>
-          <button class="btn-action blue" onclick="refreshMonitor()">↻ Refresh</button>
+          <select class="form-input" style="width:auto;padding:8px 12px" id="monitor-sel" onchange="renderMonitor()"><option value="">— Chọn buổi học —</option></select>
+          <button class="btn-action blue" onclick="renderMonitor()">↻ Refresh</button>
         </div>
       </div>
-      <div id="monitor-body">
-        <div class="no-session"><div class="no-session-icon">📡</div><div class="no-session-title">Chọn buổi học để theo dõi</div><div class="no-session-sub">Dữ liệu cập nhật mỗi 10 giây</div></div>
-      </div>
+      <div id="monitor-body"><div class="no-session"><div class="no-session-icon">📡</div><div class="no-session-title">Chọn buổi học để theo dõi</div></div></div>
     </div>
-
-    <!-- Report page -->
     <div id="t-page-report" class="page">
       <div class="page-header">
-        <div>
-          <div class="page-title">Báo cáo tổng hợp</div>
-          <div class="page-sub">Thống kê kết quả thực hành của lớp</div>
-        </div>
-        <div style="display:flex;gap:8px;align-items:center">
-          <select class="form-input" style="width:auto;padding:8px 12px" id="report-session-sel" onchange="renderReport()">
-            <option value="">— Chọn buổi học —</option>
-          </select>
+        <div><div class="page-title">Báo cáo tổng hợp</div><div class="page-sub">Thống kê kết quả thực hành</div></div>
+        <div style="display:flex;gap:8px">
+          <select class="form-input" style="width:auto;padding:8px 12px" id="report-sel" onchange="renderReport()"><option value="">— Chọn buổi học —</option></select>
           <button class="btn-action" onclick="exportCSV()">↓ Xuất CSV</button>
         </div>
       </div>
@@ -795,7 +291,7 @@ body { font-family: var(--sans); background: var(--bg); color: var(--ink); min-h
   </div>
 </div>
 
-<!-- ══ STUDENT APP ══ -->
+<!-- STUDENT -->
 <div id="screen-student" class="screen app-layout">
   <nav class="topnav">
     <div class="topnav-brand">
@@ -808,474 +304,365 @@ body { font-family: var(--sans); background: var(--bg); color: var(--ink); min-h
     </div>
     <div class="topnav-right">
       <div class="user-chip">
-        <div class="user-avatar" style="background:var(--accent)" id="sv-avatar-chip">SV</div>
+        <div class="user-avatar" id="sv-avatar" style="background:var(--accent)">SV</div>
         <span id="sv-name-chip">Sinh viên</span>
       </div>
       <button class="btn-sm" onclick="doLogout()">Đăng xuất</button>
     </div>
   </nav>
   <div class="app-body">
-    <div id="s-page-tasks" class="page active">
-      <div id="student-task-body"></div>
-    </div>
+    <div id="s-page-tasks" class="page active"><div id="sv-task-body"></div></div>
     <div id="s-page-history" class="page">
-      <div class="report-table-wrap">
+      <div class="table-wrap">
         <table class="rtable">
-          <thead><tr><th>Buổi học</th><th>Bài tập</th><th>Hình thức</th><th>Trạng thái</th><th>Điểm AI</th><th>Thời gian nộp</th></tr></thead>
-          <tbody id="sv-history-body"><tr><td colspan="6" style="text-align:center;padding:32px;color:var(--ink3)">Chưa có lịch sử</td></tr></tbody>
+          <thead><tr><th>Buổi học</th><th>Bài tập</th><th>Loại</th><th>Trạng thái</th><th>Thời gian nộp</th></tr></thead>
+          <tbody id="sv-history-body"><tr><td colspan="5" style="text-align:center;padding:32px;color:var(--ink3)">Chưa có lịch sử</td></tr></tbody>
         </table>
       </div>
     </div>
   </div>
 </div>
 
-<!-- ══ CREATE SESSION MODAL ══ -->
+<!-- CREATE MODAL -->
 <div class="modal-overlay" id="create-modal">
   <div class="modal">
     <div class="modal-header">
       <div class="modal-title">Tạo buổi học mới</div>
-      <button class="modal-close" onclick="closeCreateModal()">✕</button>
+      <button class="modal-close" onclick="closeModal()">✕</button>
     </div>
     <div class="modal-body">
       <div class="form-group">
         <label class="form-label">Tên buổi học</label>
-        <input class="form-input" id="new-session-title" placeholder="VD: Buổi 3 — Vòng lặp và hàm" />
+        <input class="form-input" id="new-title" placeholder="VD: Buổi 3 — Vòng lặp và hàm"/>
       </div>
       <div class="form-group">
         <label class="form-label">Ngày học</label>
-        <input class="form-input" type="date" id="new-session-date" />
+        <input class="form-input" type="date" id="new-date"/>
       </div>
       <div class="form-group">
-        <label class="form-label">File tài liệu (Jupyter / PDF)</label>
-        <div class="upload-zone" id="doc-upload-zone" onclick="document.getElementById('doc-file-input').click()">
-          <div class="upload-zone-icon">📎</div>
-          <div class="upload-zone-text">Kéo thả hoặc click để upload</div>
-          <div class="upload-zone-sub">.ipynb, .pdf, .py — tối đa 20MB</div>
-        </div>
-        <input type="file" id="doc-file-input" style="display:none" accept=".ipynb,.pdf,.py,.md" onchange="handleDocUpload(this)" multiple />
-        <div id="doc-file-list" style="margin-top:8px;display:flex;flex-direction:column;gap:6px"></div>
+        <label class="form-label">Tài liệu đính kèm (tên file hoặc link)</label>
+        <input class="form-input" id="new-doc" placeholder="VD: buoi3.ipynb hoặc https://drive.google.com/..."/>
       </div>
-
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;margin-top:8px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin:16px 0 8px">
         <label class="form-label" style="margin:0">Danh sách bài tập</label>
         <button class="btn-ghost" onclick="addTask()" style="padding:5px 10px;font-size:12px">+ Thêm bài</button>
       </div>
       <div class="task-builder" id="task-builder"></div>
     </div>
     <div class="modal-footer">
-      <button class="btn-ghost" onclick="closeCreateModal()">Hủy</button>
-      <button class="btn-action" onclick="saveSessionDraft()">Lưu nháp</button>
-      <button class="btn-action green" onclick="publishSession()">🚀 Phát hành cho lớp</button>
+      <button class="btn-ghost" onclick="closeModal()">Hủy</button>
+      <button class="btn-ghost" onclick="saveSession('draft')">💾 Lưu nháp</button>
+      <button class="btn-action green" onclick="saveSession('live')">🚀 Phát hành</button>
     </div>
   </div>
 </div>
 
-<!-- Toast -->
 <div class="toast" id="toast"></div>
 
 <script>
-// ══════════════════════════════════════
-// ACCOUNTS
-// ══════════════════════════════════════
+// ════════════════════════════════════════════
+// ▼▼▼ SUPABASE CONFIG — PASTE VÀO ĐÂY ▼▼▼
+// ════════════════════════════════════════════
+const SUPABASE_URL  = 'https://vcpithamrjaorbolthnw.supabase.co';
+const SUPABASE_KEY  = 'sb_publishable__EdqG7pUG0N0w-YVW9njEA_mfrF6KeD';
+// ════════════════════════════════════════════
+// ▲▲▲ HẾT PHẦN CẦN THAY ▲▲▲
+// ════════════════════════════════════════════
+
+// ════════════════════════════════════════════
+// ACCOUNTS — Sửa danh sách sinh viên tại đây
+// ════════════════════════════════════════════
 const ACCOUNTS = {
   teacher: {
     'gv_nguyenvan': { pw:'123456', name:'Nguyễn Văn Minh', color:'#7c3aed' },
-    'gv_tranthi':   { pw:'123456', name:'Trần Thị Lan',    color:'#be185d' },
   },
   student: {
-    'sv001': { pw:'abc123', name:'Nguyễn Thị An',   id:'SV2024001', class:'CNTT-K22A', color:'#2563eb' },
-    'sv002': { pw:'abc123', name:'Trần Văn Bình',   id:'SV2024002', class:'CNTT-K22A', color:'#16a34a' },
-    'sv003': { pw:'abc123', name:'Lê Minh Cường',   id:'SV2024003', class:'CNTT-K22A', color:'#d97706' },
-    'sv004': { pw:'abc123', name:'Phạm Thị Dung',   id:'SV2024004', class:'CNTT-K22A', color:'#dc2626' },
-    'sv005': { pw:'abc123', name:'Hoàng Văn Em',    id:'SV2024005', class:'CNTT-K22A', color:'#7c3aed' },
-    'sv006': { pw:'abc123', name:'Vũ Thị Phương',   id:'SV2024006', class:'CNTT-K22A', color:'#0891b2' },
+    'sv001': { pw:'abc123', name:'Nguyễn Thị An',  id:'SV2024001', class:'CNTT-K22A', color:'#2563eb' },
+    'sv002': { pw:'abc123', name:'Trần Văn Bình',  id:'SV2024002', class:'CNTT-K22A', color:'#16a34a' },
+    'sv003': { pw:'abc123', name:'Lê Minh Cường',  id:'SV2024003', class:'CNTT-K22A', color:'#d97706' },
+    'sv004': { pw:'abc123', name:'Phạm Thị Dung',  id:'SV2024004', class:'CNTT-K22A', color:'#dc2626' },
+    'sv005': { pw:'abc123', name:'Hoàng Văn Em',   id:'SV2024005', class:'CNTT-K22A', color:'#7c3aed' },
+    'sv006': { pw:'abc123', name:'Vũ Thị Phương',  id:'SV2024006', class:'CNTT-K22A', color:'#0891b2' },
   }
 };
 
+// ════════════════════════════════════════════
+// SUPABASE CLIENT
+// ════════════════════════════════════════════
+const db = {
+  async query(table, method='GET', body=null, filter='') {
+    const url = `${SUPABASE_URL}/rest/v1/${table}${filter}`;
+    const res = await fetch(url, {
+      method,
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': `Bearer ${SUPABASE_KEY}`,
+        'Content-Type': 'application/json',
+        'Prefer': method==='POST' ? 'return=representation' : 'return=minimal'
+      },
+      body: body ? JSON.stringify(body) : null
+    });
+    if (!res.ok) {
+      const err = await res.text();
+      throw new Error(`Supabase error: ${err}`);
+    }
+    const text = await res.text();
+    return text ? JSON.parse(text) : null;
+  },
+
+  async getSessions() {
+    const rows = await this.query('sessions','GET',null,'?order=updated_at.desc');
+    return (rows||[]).map(r=>r.data);
+  },
+  async upsertSession(session) {
+    await this.query('sessions','POST',{ id:session.id, data:session },
+      '?on_conflict=id');
+    // Supabase upsert via POST with on_conflict
+    await fetch(`${SUPABASE_URL}/rest/v1/sessions?id=eq.${session.id}`, {
+      method:'PATCH',
+      headers:{ 'apikey':SUPABASE_KEY, 'Authorization':`Bearer ${SUPABASE_KEY}`, 'Content-Type':'application/json' },
+      body: JSON.stringify({ data: session, updated_at: new Date().toISOString() })
+    });
+  },
+  async setSession(session) {
+    // Try update first, then insert
+    const patch = await fetch(`${SUPABASE_URL}/rest/v1/sessions?id=eq.${session.id}`, {
+      method:'PATCH',
+      headers:{ 'apikey':SUPABASE_KEY, 'Authorization':`Bearer ${SUPABASE_KEY}`, 'Content-Type':'application/json', 'Prefer':'return=representation' },
+      body: JSON.stringify({ data: session, updated_at: new Date().toISOString() })
+    });
+    const patched = await patch.json();
+    if (!patched || patched.length === 0) {
+      await fetch(`${SUPABASE_URL}/rest/v1/sessions`, {
+        method:'POST',
+        headers:{ 'apikey':SUPABASE_KEY, 'Authorization':`Bearer ${SUPABASE_KEY}`, 'Content-Type':'application/json' },
+        body: JSON.stringify({ id:session.id, data:session })
+      });
+    }
+  },
+
+  async getSubmissions(sessionId) {
+    const rows = await this.query('submissions','GET',null,`?session_id=eq.${sessionId}`);
+    // group by student_id → task_id
+    const map = {};
+    for (const r of (rows||[])) {
+      if (!map[r.student_id]) map[r.student_id] = {};
+      map[r.student_id][r.task_id] = r.data;
+    }
+    return map;
+  },
+  async setSubmission(sessionId, studentId, taskId, data) {
+    const id = `${sessionId}__${studentId}__${taskId}`;
+    const patch = await fetch(`${SUPABASE_URL}/rest/v1/submissions?id=eq.${id}`, {
+      method:'PATCH',
+      headers:{ 'apikey':SUPABASE_KEY, 'Authorization':`Bearer ${SUPABASE_KEY}`, 'Content-Type':'application/json', 'Prefer':'return=representation' },
+      body: JSON.stringify({ data, updated_at: new Date().toISOString() })
+    });
+    const patched = await patch.json();
+    if (!patched || patched.length === 0) {
+      await fetch(`${SUPABASE_URL}/rest/v1/submissions`, {
+        method:'POST',
+        headers:{ 'apikey':SUPABASE_KEY, 'Authorization':`Bearer ${SUPABASE_KEY}`, 'Content-Type':'application/json' },
+        body: JSON.stringify({ id, session_id:sessionId, student_id:studentId, task_id:taskId, data })
+      });
+    }
+  },
+  async getSubmission(sessionId, studentId, taskId) {
+    const id = `${sessionId}__${studentId}__${taskId}`;
+    const rows = await this.query('submissions','GET',null,`?id=eq.${id}`);
+    return rows?.[0]?.data || null;
+  },
+
+  async setPresence(sessionId, studentId, data) {
+    const id = `${sessionId}__${studentId}`;
+    const patch = await fetch(`${SUPABASE_URL}/rest/v1/presence?id=eq.${id}`, {
+      method:'PATCH',
+      headers:{ 'apikey':SUPABASE_KEY, 'Authorization':`Bearer ${SUPABASE_KEY}`, 'Content-Type':'application/json', 'Prefer':'return=representation' },
+      body: JSON.stringify({ data, last_seen: new Date().toISOString() })
+    });
+    const patched = await patch.json();
+    if (!patched || patched.length === 0) {
+      await fetch(`${SUPABASE_URL}/rest/v1/presence`, {
+        method:'POST',
+        headers:{ 'apikey':SUPABASE_KEY, 'Authorization':`Bearer ${SUPABASE_KEY}`, 'Content-Type':'application/json' },
+        body: JSON.stringify({ id, session_id:sessionId, student_id:studentId, data })
+      });
+    }
+  },
+  async getPresence(sessionId) {
+    const rows = await this.query('presence','GET',null,`?session_id=eq.${sessionId}`);
+    const map = {};
+    for (const r of (rows||[])) {
+      map[r.student_id] = { ...r.data, last_seen: r.last_seen };
+    }
+    return map;
+  }
+};
+
+// ════════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════════
 let currentRole = 'teacher';
 let currentUser = null;
-let monitorInterval = null;
+let newTasks = [];
+let monitorTimer = null;
+let configOK = false;
 
-// Session data stored in shared storage
-// Key: 'sessions' → array of session objects
-// Key: 'submissions:sessionId:userId:taskId' → submission object
-// Key: 'presence:sessionId:userId' → {lastSeen, taskProgress}
+// ════════════════════════════════════════════
+// BOOT
+// ════════════════════════════════════════════
+async function boot() {
+  if (SUPABASE_URL.includes('PASTE_YOUR')) {
+    document.getElementById('loading-text').textContent = 'Chưa cấu hình Supabase';
+    setTimeout(()=>{
+      document.getElementById('screen-loading').classList.remove('active');
+      document.getElementById('screen-login').classList.add('active');
+      const hint = document.querySelector('.hint-box');
+      hint.style.background='#fef3c7';hint.style.border='1px solid #d97706';
+      hint.innerHTML='<strong style="color:#d97706">⚠️ Chưa cấu hình Supabase!</strong><br>Paste SUPABASE_URL và SUPABASE_KEY vào đầu file. Xem hướng dẫn từ Claude.';
+    }, 800);
+    return;
+  }
+  // Test connection
+  try {
+    document.getElementById('loading-text').textContent = 'Đang kết nối Supabase...';
+    await db.getSessions();
+    configOK = true;
+    document.getElementById('screen-loading').classList.remove('active');
+    document.getElementById('screen-login').classList.add('active');
+  } catch(e) {
+    document.getElementById('loading-text').innerHTML =
+      `<div style="text-align:center;max-width:380px">
+        <div style="font-size:32px;margin-bottom:12px">⚠️</div>
+        <div style="font-weight:700;font-size:15px;margin-bottom:8px">Không kết nối được Supabase</div>
+        <div style="font-size:13px;color:#6b6860;line-height:1.7">
+          Kiểm tra lại:<br>
+          1. SUPABASE_URL và SUPABASE_KEY đã đúng chưa?<br>
+          2. Đã tạo đủ 3 bảng và bật RLS chưa?<br>
+          3. Policy "allow all" đã chạy chưa?<br><br>
+          <span style="font-size:11px;color:#9a9690">Lỗi: ${e.message}</span>
+        </div>
+      </div>`;
+  }
+}
 
-// ══════════════════════════════════════
-// ROLE TOGGLE
-// ══════════════════════════════════════
+// ════════════════════════════════════════════
+// AUTH
+// ════════════════════════════════════════════
 function setRole(role) {
   currentRole = role;
   document.getElementById('role-teacher').classList.toggle('active', role==='teacher');
   document.getElementById('role-student').classList.toggle('active', role==='student');
-  document.getElementById('login-id-label').textContent = role==='teacher' ? 'Tài khoản giáo viên' : 'Mã sinh viên';
-  document.getElementById('login-id').placeholder = role==='teacher' ? 'VD: gv_nguyenvan' : 'VD: sv001';
-  document.getElementById('login-hint').innerHTML = role==='teacher'
-    ? '<strong>Demo:</strong> gv_nguyenvan / 123456'
-    : '<strong>Demo:</strong> sv001 / abc123 &nbsp;|&nbsp; sv002, sv003... cũng dùng mật khẩu abc123';
+  document.getElementById('login-id-label').textContent = role==='teacher'?'Tài khoản giáo viên':'Mã sinh viên';
+  document.getElementById('login-id').placeholder = role==='teacher'?'VD: gv_nguyenvan':'VD: sv001';
 }
 
-// ══════════════════════════════════════
-// AUTH
-// ══════════════════════════════════════
 async function doLogin() {
   const id = document.getElementById('login-id').value.trim().toLowerCase();
   const pw = document.getElementById('login-pw').value;
-  const db = ACCOUNTS[currentRole];
-  if (!db[id] || db[id].pw !== pw) { showToast('❌ Sai tài khoản hoặc mật khẩu!', 'error'); return; }
+  const err = document.getElementById('login-error');
+  const accts = ACCOUNTS[currentRole];
+  if (!accts[id] || accts[id].pw !== pw) { err.style.display='block'; return; }
+  err.style.display='none';
+  currentUser = { ...accts[id], username:id, role:currentRole };
 
-  currentUser = { ...db[id], username: id, role: currentRole };
   document.getElementById('screen-login').classList.remove('active');
-
-  if (currentRole === 'teacher') {
+  if (currentRole==='teacher') {
     document.getElementById('screen-teacher').classList.add('active');
     document.getElementById('teacher-name-chip').textContent = currentUser.name;
-    await renderTeacherSessions();
-    populateSessionSelects();
+    await loadSessions();
+    startMonitorRefresh();
   } else {
     document.getElementById('screen-student').classList.add('active');
-    const initials = currentUser.name.split(' ').slice(-2).map(w=>w[0]).join('').toUpperCase();
-    document.getElementById('sv-avatar-chip').textContent = initials;
-    document.getElementById('sv-avatar-chip').style.background = currentUser.color;
-    document.getElementById('sv-name-chip').textContent = currentUser.name + ' · ' + currentUser.id;
+    const ini = currentUser.name.split(' ').slice(-2).map(w=>w[0]).join('').toUpperCase();
+    document.getElementById('sv-avatar').textContent = ini;
+    document.getElementById('sv-avatar').style.background = currentUser.color;
+    document.getElementById('sv-name-chip').textContent = `${currentUser.name} · ${currentUser.id}`;
     await renderStudentTasks();
-    startPresenceHeartbeat();
+    startHeartbeat();
   }
 }
 
 function doLogout() {
-  if (monitorInterval) clearInterval(monitorInterval);
-  currentUser = null;
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  if (monitorTimer) clearInterval(monitorTimer);
+  currentUser=null;
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById('screen-login').classList.add('active');
-  document.getElementById('login-id').value = '';
-  document.getElementById('login-pw').value = '';
+  document.getElementById('login-id').value='';
+  document.getElementById('login-pw').value='';
 }
 
-// ══════════════════════════════════════
-// STORAGE HELPERS
-// ══════════════════════════════════════
-async function storageGet(key) {
-  try {
-    const r = await window.storage.get(key, true);
-    return r ? JSON.parse(r.value) : null;
-  } catch { return null; }
-}
-async function storageSet(key, val) {
-  try { await window.storage.set(key, JSON.stringify(val), true); } catch(e) { console.error(e); }
-}
-async function storageList(prefix) {
-  try {
-    const r = await window.storage.list(prefix, true);
-    return r ? r.keys : [];
-  } catch { return []; }
+// ════════════════════════════════════════════
+// SESSIONS
+// ════════════════════════════════════════════
+async function loadSessions() {
+  const sessions = await db.getSessions();
+  renderSessionList(sessions);
+  populateSelects(sessions);
 }
 
-// ══════════════════════════════════════
-// SESSIONS DATA
-// ══════════════════════════════════════
-async function getSessions() {
-  return (await storageGet('sessions')) || getSampleSessions();
-}
-async function saveSessions(sessions) {
-  await storageSet('sessions', sessions);
-}
-
-function getSampleSessions() {
-  return [
-    {
-      id: 'sess_1', title: 'Buổi 1 — Biến, kiểu dữ liệu, nhập xuất',
-      date: '2025-02-10', status: 'done',
-      tasks: [
-        { id:'t1', title:'Bài 1: Khai báo biến và in kết quả', type:'code', desc:'Khai báo 3 biến (tên, tuổi, điểm) và in ra màn hình theo định dạng đẹp.' },
-        { id:'t2', title:'Bài 2: Nhập dữ liệu từ bàn phím', type:'code', desc:'Viết chương trình nhập tên, tính diện tích hình chữ nhật từ input.' },
-      ]
-    },
-    {
-      id: 'sess_2', title: 'Buổi 2 — Cấu trúc điều kiện',
-      date: '2025-02-17', status: 'live',
-      tasks: [
-        { id:'t1', title:'Bài 1: Phân loại số chẵn/lẻ/âm/dương', type:'code', desc:'Nhập số n. Kiểm tra và in kết quả: chẵn/lẻ, dương/âm/bằng 0.' },
-        { id:'t2', title:'Bài 2: Xếp loại học lực', type:'code', desc:'Nhập điểm TB (0-10), in xếp loại: Xuất sắc ≥9, Giỏi ≥8, Khá ≥6.5, TB ≥5, Yếu <5.' },
-        { id:'t3', title:'Bài 3: Upload notebook đã làm', type:'upload', desc:'Upload file .ipynb hoặc .py chứa bài giải của buổi này.' },
-      ]
-    },
-  ];
-}
-
-// ══════════════════════════════════════
-// TEACHER — SESSIONS
-// ══════════════════════════════════════
-async function renderTeacherSessions() {
-  const sessions = await getSessions();
-  const list = document.getElementById('session-list-teacher');
-  list.innerHTML = sessions.map(s => `
-    <div class="session-card ${s.status==='live'?'live':''}" onclick="openSessionMonitor('${s.id}')">
+function renderSessionList(sessions) {
+  const el = document.getElementById('session-list');
+  if (!sessions.length) {
+    el.innerHTML='<div class="no-session"><div class="no-session-icon">📚</div><div class="no-session-title">Chưa có buổi học nào</div><div class="no-session-sub">Nhấn "+ Tạo buổi học mới" để bắt đầu</div></div>';
+    return;
+  }
+  el.innerHTML = sessions.map(s=>`
+    <div class="session-card ${s.status==='live'?'live':''}" onclick="openMonitorFor('${s.id}')">
       <div class="session-num" style="${s.status==='live'?'background:var(--green-l);color:var(--green)':''}">${s.date.slice(5)}</div>
       <div class="session-info">
         <div class="session-title">${s.title}</div>
-        <div class="session-meta">📅 ${formatDate(s.date)}</div>
-        <div class="session-tasks">📝 ${s.tasks.length} bài tập · ${s.tasks.filter(t=>t.type==='code').length} viết code · ${s.tasks.filter(t=>t.type==='upload').length} upload</div>
+        <div class="session-meta">📅 ${fmtDate(s.date)} · ${s.tasks.length} bài tập${s.doc?` · 📎 ${s.doc}`:''}</div>
       </div>
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px">
         <span class="status-pill status-${s.status}">${s.status==='live'?'🟢 Đang học':s.status==='done'?'Đã kết thúc':'Nháp'}</span>
-        <span style="font-size:12px;color:var(--ink3)">→ Xem chi tiết</span>
+        ${s.status==='live'?`<button onclick="event.stopPropagation();endSession('${s.id}')" style="font-size:11px;color:var(--ink3);background:none;border:none;cursor:pointer;padding:0">Kết thúc buổi</button>`:''}
       </div>
-    </div>
-  `).join('') || '<div class="no-session"><div class="no-session-icon">📚</div><div class="no-session-title">Chưa có buổi học nào</div><div class="no-session-sub">Nhấn "Tạo buổi học mới" để bắt đầu</div></div>';
+    </div>`).join('');
 }
 
-async function populateSessionSelects() {
-  const sessions = await getSessions();
-  const opts = sessions.map(s => `<option value="${s.id}">${s.title}</option>`).join('');
-  document.getElementById('monitor-session-sel').innerHTML = '<option value="">— Chọn buổi học —</option>' + opts;
-  document.getElementById('report-session-sel').innerHTML = '<option value="">— Chọn buổi học —</option>' + opts;
+function populateSelects(sessions) {
+  const opts = sessions.map(s=>`<option value="${s.id}">${s.title}</option>`).join('');
+  document.getElementById('monitor-sel').innerHTML = '<option value="">— Chọn buổi học —</option>'+opts;
+  document.getElementById('report-sel').innerHTML  = '<option value="">— Chọn buổi học —</option>'+opts;
 }
 
-function openSessionMonitor(sessionId) {
-  document.getElementById('monitor-session-sel').value = sessionId;
+async function endSession(id) {
+  if (!confirm('Kết thúc buổi học này?')) return;
+  const sessions = await db.getSessions();
+  const s = sessions.find(x=>x.id===id);
+  if (s) { s.status='done'; await db.setSession(s); }
+  await loadSessions();
+  showToast('Buổi học đã kết thúc');
+}
+
+function openMonitorFor(id) {
+  document.getElementById('monitor-sel').value=id;
   teacherTab('monitor', document.querySelectorAll('.topnav-tabs .tab')[1]);
   renderMonitor();
 }
 
-// ══════════════════════════════════════
-// TEACHER — MONITOR (LIVE)
-// ══════════════════════════════════════
-async function renderMonitor() {
-  const sessionId = document.getElementById('monitor-session-sel').value;
-  const body = document.getElementById('monitor-body');
-  if (!sessionId) {
-    body.innerHTML = '<div class="no-session"><div class="no-session-icon">📡</div><div class="no-session-title">Chọn buổi học để theo dõi</div></div>';
-    return;
-  }
-
-  const sessions = await getSessions();
-  const session = sessions.find(s => s.id === sessionId);
-  if (!session) return;
-
-  // Get all student presence & submissions
-  const students = Object.entries(ACCOUNTS.student).map(([uid, u]) => ({ uid, ...u }));
-  const presenceKeys = await storageList(`presence:${sessionId}:`);
-  const subKeys = await storageList(`sub:${sessionId}:`);
-
-  const presenceMap = {};
-  for (const k of presenceKeys) {
-    const d = await storageGet(k);
-    if (d) presenceMap[k.split(':')[2]] = d;
-  }
-
-  const subMap = {};
-  for (const k of subKeys) {
-    const parts = k.split(':');
-    const uid = parts[2], taskId = parts[3];
-    if (!subMap[uid]) subMap[uid] = {};
-    subMap[uid][taskId] = await storageGet(k);
-  }
-
-  const now = Date.now();
-  let activeCount = 0, submittedCount = 0, notStartedCount = 0;
-
-  const cards = students.map(sv => {
-    const presence = presenceMap[sv.uid];
-    const lastSeen = presence ? presence.lastSeen : 0;
-    const elapsed = (now - lastSeen) / 1000;
-    let statusClass = 'notstarted', statusLabel = 'Chưa vào';
-    if (lastSeen > 0) {
-      if (elapsed < 30) { statusClass = 'active'; statusLabel = 'Đang làm'; activeCount++; }
-      else if (elapsed < 120) { statusClass = 'idle'; statusLabel = 'Không hoạt động'; }
-      else { statusClass = 'idle'; statusLabel = `${Math.round(elapsed/60)}p trước`; }
-    } else { notStartedCount++; }
-
-    const svSubs = subMap[sv.uid] || {};
-    const doneCount = Object.keys(svSubs).filter(k => svSubs[k] && svSubs[k].submitted).length;
-    if (doneCount === session.tasks.length) submittedCount++;
-
-    const taskBars = session.tasks.map(t => {
-      const sub = svSubs[t.id];
-      const pct = sub ? (sub.submitted ? 100 : sub.progress || 0) : 0;
-      const color = pct === 100 ? 'var(--green)' : pct > 0 ? 'var(--amber)' : 'var(--border2)';
-      return `<div class="task-progress">
-        <span class="task-progress-label">${t.title.split(':')[0]}</span>
-        <div class="task-bar-bg"><div class="task-bar-fill" style="width:${pct}%;background:${color}"></div></div>
-        <span class="task-pct">${pct}%</span>
-      </div>`;
-    }).join('');
-
-    const initials = sv.name.split(' ').slice(-2).map(w=>w[0]).join('').toUpperCase();
-    return `
-      <div class="student-monitor-card st-${statusClass}">
-        <div class="smc-top">
-          <div class="smc-avatar" style="background:${sv.color}">${initials}</div>
-          <div>
-            <div class="smc-name">${sv.name}</div>
-            <div class="smc-id">${sv.id}</div>
-          </div>
-          <div class="smc-status ${statusClass}">${statusLabel}</div>
-        </div>
-        <div class="progress-tasks">${taskBars}</div>
-        <div style="margin-top:8px;font-size:11px;color:var(--ink3)">✅ ${doneCount}/${session.tasks.length} bài nộp</div>
-      </div>
-    `;
-  }).join('');
-
-  body.innerHTML = `
-    <div class="monitor-header">
-      <div class="live-dot"></div>
-      <div>
-        <div style="font-weight:800;font-size:16px">${session.title}</div>
-        <div style="font-size:12px;color:var(--ink2)">📅 ${formatDate(session.date)} · ${session.tasks.length} bài tập</div>
-      </div>
-      <div class="monitor-stats">
-        <div class="mstat"><div class="mstat-val green">${activeCount}</div><div class="mstat-label">Đang làm</div></div>
-        <div class="mstat"><div class="mstat-val amber">${students.length - activeCount - notStartedCount}</div><div class="mstat-label">Không ht</div></div>
-        <div class="mstat"><div class="mstat-val" style="color:var(--ink)">${notStartedCount}</div><div class="mstat-label">Chưa vào</div></div>
-        <div class="mstat"><div class="mstat-val" style="color:var(--accent)">${submittedCount}</div><div class="mstat-label">Hoàn tất</div></div>
-      </div>
-    </div>
-    <div class="student-grid">${cards}</div>
-  `;
-}
-
-function refreshMonitor() {
-  renderMonitor();
-  showToast('🔄 Đã cập nhật dữ liệu');
-}
-
-// Auto-refresh every 10s when on monitor tab
-function startMonitorAutoRefresh() {
-  if (monitorInterval) clearInterval(monitorInterval);
-  monitorInterval = setInterval(() => {
-    if (document.getElementById('t-page-monitor').classList.contains('active')) renderMonitor();
-  }, 10000);
-}
-
-// ══════════════════════════════════════
-// TEACHER — REPORT
-// ══════════════════════════════════════
-async function renderReport() {
-  const sessionId = document.getElementById('report-session-sel').value;
-  const body = document.getElementById('report-body');
-  if (!sessionId) { body.innerHTML = '<div class="no-session"><div class="no-session-icon">📊</div><div class="no-session-title">Chọn buổi học để xem báo cáo</div></div>'; return; }
-
-  const sessions = await getSessions();
-  const session = sessions.find(s => s.id === sessionId);
-  if (!session) return;
-
-  const students = Object.entries(ACCOUNTS.student).map(([uid, u]) => ({ uid, ...u }));
-  const subKeys = await storageList(`sub:${sessionId}:`);
-  const subMap = {};
-  for (const k of subKeys) {
-    const parts = k.split(':');
-    const uid = parts[2], taskId = parts[3];
-    if (!subMap[uid]) subMap[uid] = {};
-    subMap[uid][taskId] = await storageGet(k);
-  }
-
-  let totalSubmitted = 0, totalPossible = students.length * session.tasks.length;
-
-  const rows = students.map(sv => {
-    const svSubs = subMap[sv.uid] || {};
-    const taskDots = session.tasks.map(t => {
-      const sub = svSubs[t.id];
-      if (!sub) return `<div class="tdot tdot-none" title="${t.title}">—</div>`;
-      if (sub.submitted) { totalSubmitted++; return `<div class="tdot tdot-done" title="${t.title}">✓</div>`; }
-      return `<div class="tdot tdot-partial" title="${t.title}">~</div>`;
-    }).join('');
-
-    const doneCount = Object.values(svSubs).filter(s => s && s.submitted).length;
-    const pct = Math.round(doneCount / session.tasks.length * 100);
-    const chipClass = pct === 100 ? 'chip-green' : pct >= 50 ? 'chip-amber' : 'chip-red';
-    const lastSub = Object.values(svSubs).filter(s=>s&&s.submittedAt).map(s=>s.submittedAt).sort().pop();
-
-    return `<tr>
-      <td><span class="td-name">${sv.name}</span></td>
-      <td style="font-family:var(--mono);font-size:12px;color:var(--ink3)">${sv.id}</td>
-      <td><div class="task-dots">${taskDots}</div></td>
-      <td>${doneCount}/${session.tasks.length}</td>
-      <td><span class="score-chip ${chipClass}">${pct}%</span></td>
-      <td style="font-size:12px;color:var(--ink3)">${lastSub ? new Date(lastSub).toLocaleTimeString('vi-VN') : '—'}</td>
-    </tr>`;
-  }).join('');
-
-  const completionRate = Math.round(totalSubmitted / totalPossible * 100);
-  body.innerHTML = `
-    <div class="report-grid">
-      <div class="report-card"><div class="rc-label">Sĩ số</div><div class="rc-val">${students.length}</div><div class="rc-sub">sinh viên trong lớp</div></div>
-      <div class="report-card"><div class="rc-label">Tỉ lệ nộp bài</div><div class="rc-val ${completionRate>=80?'green':completionRate>=50?'amber':'red'}">${completionRate}%</div><div class="rc-sub">${totalSubmitted}/${totalPossible} lượt nộp</div></div>
-      <div class="report-card"><div class="rc-label">Hoàn tất 100%</div><div class="rc-val green">${students.filter(sv=>{const s=subMap[sv.uid]||{};return Object.values(s).filter(x=>x&&x.submitted).length===session.tasks.length;}).length}</div><div class="rc-sub">sinh viên</div></div>
-      <div class="report-card"><div class="rc-label">Chưa nộp bài</div><div class="rc-val red">${students.filter(sv=>!subMap[sv.uid]||Object.keys(subMap[sv.uid]).length===0).length}</div><div class="rc-sub">sinh viên</div></div>
-    </div>
-    <div class="report-table-wrap">
-      <table class="rtable">
-        <thead><tr><th>Họ tên</th><th>Mã SV</th><th>Tiến độ bài</th><th>Số bài nộp</th><th>Hoàn thành</th><th>Nộp lần cuối</th></tr></thead>
-        <tbody>${rows}</tbody>
-      </table>
-    </div>
-  `;
-}
-
-async function exportCSV() {
-  const sessionId = document.getElementById('report-session-sel').value;
-  if (!sessionId) { showToast('Chọn buổi học trước!', 'error'); return; }
-  const sessions = await getSessions();
-  const session = sessions.find(s => s.id === sessionId);
-  const students = Object.entries(ACCOUNTS.student).map(([uid, u]) => ({ uid, ...u }));
-  const subKeys = await storageList(`sub:${sessionId}:`);
-  const subMap = {};
-  for (const k of subKeys) {
-    const parts = k.split(':');
-    if (!subMap[parts[2]]) subMap[parts[2]] = {};
-    subMap[parts[2]][parts[3]] = await storageGet(k);
-  }
-
-  let csv = `"Họ tên","Mã SV","Lớp",${session.tasks.map(t=>`"${t.title}"`).join(',')},"Tổng nộp","% Hoàn thành"\n`;
-  students.forEach(sv => {
-    const svSubs = subMap[sv.uid] || {};
-    const taskVals = session.tasks.map(t => svSubs[t.id]?.submitted ? '"Đã nộp"' : '"Chưa nộp"').join(',');
-    const done = Object.values(svSubs).filter(s=>s&&s.submitted).length;
-    csv += `"${sv.name}","${sv.id}","${sv.class}",${taskVals},${done},${Math.round(done/session.tasks.length*100)}%\n`;
-  });
-
-  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = `${session.title.replace(/[^a-z0-9]/gi,'_')}_baocao.csv`;
-  a.click();
-  showToast('✅ Đã xuất file CSV!', 'success');
-}
-
-// ══════════════════════════════════════
+// ════════════════════════════════════════════
 // CREATE SESSION MODAL
-// ══════════════════════════════════════
-let newTasks = [];
-let newDocs = [];
-
-function openCreateModal() {
-  newTasks = [];
-  newDocs = [];
-  document.getElementById('new-session-title').value = '';
-  document.getElementById('new-session-date').value = new Date().toISOString().slice(0,10);
-  document.getElementById('doc-file-list').innerHTML = '';
-  document.getElementById('doc-upload-zone').classList.remove('has-file');
-  renderTaskBuilder();
+// ════════════════════════════════════════════
+function openModal() {
+  newTasks=[];
+  document.getElementById('new-title').value='';
+  document.getElementById('new-date').value=new Date().toISOString().slice(0,10);
+  document.getElementById('new-doc').value='';
+  addTask(); addTask();
   document.getElementById('create-modal').classList.add('open');
-  addTask(); addTask(); // default 2 tasks
 }
-function closeCreateModal() { document.getElementById('create-modal').classList.remove('open'); }
-
-function addTask() {
-  newTasks.push({ id:'t'+(newTasks.length+1), title:'', type:'code', desc:'' });
-  renderTaskBuilder();
-}
-
+function closeModal() { document.getElementById('create-modal').classList.remove('open'); }
+function addTask() { newTasks.push({title:'',type:'code',desc:''}); renderTaskBuilder(); }
+function removeTask(i) { newTasks.splice(i,1); renderTaskBuilder(); }
 function renderTaskBuilder() {
-  const el = document.getElementById('task-builder');
-  el.innerHTML = newTasks.map((t,i) => `
+  document.getElementById('task-builder').innerHTML = newTasks.map((t,i)=>`
     <div class="task-item">
       <div style="font-family:var(--mono);font-size:13px;font-weight:700;color:var(--ink3);padding-top:6px">B${i+1}</div>
       <div class="task-item-body">
         <div style="display:flex;gap:8px;margin-bottom:8px">
-          <input class="form-input" style="flex:1" placeholder="Tên bài tập" value="${t.title}" oninput="newTasks[${i}].title=this.value" />
+          <input class="form-input" style="flex:1" placeholder="Tên bài tập" value="${t.title}" oninput="newTasks[${i}].title=this.value"/>
           <select class="form-input" style="width:130px" onchange="newTasks[${i}].type=this.value">
             <option value="code" ${t.type==='code'?'selected':''}>💻 Viết code</option>
             <option value="upload" ${t.type==='upload'?'selected':''}>📎 Upload file</option>
@@ -1283,313 +670,396 @@ function renderTaskBuilder() {
         </div>
         <textarea class="form-input" style="height:60px;resize:none;font-size:13px" placeholder="Mô tả yêu cầu..." oninput="newTasks[${i}].desc=this.value">${t.desc}</textarea>
       </div>
-      <button onclick="newTasks.splice(${i},1);renderTaskBuilder()" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:18px;padding:4px;align-self:flex-start">×</button>
-    </div>
-  `).join('');
+      <button onclick="removeTask(${i})" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:18px;padding:4px;align-self:flex-start">×</button>
+    </div>`).join('');
 }
 
-function handleDocUpload(input) {
-  const files = Array.from(input.files);
-  newDocs = [...newDocs, ...files.map(f=>({name:f.name, size:f.size, type:f.type}))];
-  const zone = document.getElementById('doc-upload-zone');
-  zone.classList.add('has-file');
-  zone.innerHTML = `<div class="upload-zone-icon">✅</div><div class="upload-zone-text">${newDocs.length} file đã chọn</div><div class="upload-zone-sub">Click để thêm file</div>`;
-  document.getElementById('doc-file-list').innerHTML = newDocs.map((f,i) =>
-    `<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:var(--green-l);border-radius:6px;font-size:12px">
-      <span>📄</span><span style="flex:1;color:var(--green)">${f.name}</span>
-      <span style="color:var(--ink3)">${(f.size/1024).toFixed(1)} KB</span>
-      <button onclick="newDocs.splice(${i},1)" style="background:none;border:none;cursor:pointer;color:var(--ink3)">×</button>
-    </div>`
-  ).join('');
+async function saveSession(status) {
+  const title=document.getElementById('new-title').value.trim();
+  const date=document.getElementById('new-date').value;
+  const doc=document.getElementById('new-doc').value.trim();
+  if (!title){ showToast('Nhập tên buổi học!','error'); return; }
+  if (!newTasks.length){ showToast('Thêm ít nhất 1 bài tập!','error'); return; }
+  if (newTasks.some(t=>!t.title.trim())){ showToast('Điền tên cho tất cả bài tập!','error'); return; }
+  const session = { id:'sess_'+Date.now(), title, date, status, doc, tasks:newTasks.map((t,i)=>({id:`t${i+1}`,...t})), createdAt:Date.now() };
+  await db.setSession(session);
+  closeModal();
+  await loadSessions();
+  showToast(status==='live'?'🚀 Buổi học đã phát hành!':'💾 Đã lưu nháp!','success');
 }
 
-async function saveSessionDraft() { await saveNewSession('draft'); }
-async function publishSession() { await saveNewSession('live'); }
-
-async function saveNewSession(status) {
-  const title = document.getElementById('new-session-title').value.trim();
-  const date = document.getElementById('new-session-date').value;
-  if (!title) { showToast('Nhập tên buổi học!', 'error'); return; }
-  if (!newTasks.length) { showToast('Thêm ít nhất 1 bài tập!', 'error'); return; }
-  if (newTasks.some(t=>!t.title.trim())) { showToast('Điền tên cho tất cả bài tập!', 'error'); return; }
-
-  const sessions = await getSessions();
-  const newSession = {
-    id: 'sess_' + Date.now(),
-    title, date, status,
-    tasks: newTasks.map((t,i) => ({ ...t, id:'t'+(i+1) })),
-    docs: newDocs,
-    createdAt: Date.now()
-  };
-  sessions.unshift(newSession);
-  await saveSessions(sessions);
-  closeCreateModal();
-  await renderTeacherSessions();
-  populateSessionSelects();
-  showToast(status === 'live' ? '🚀 Buổi học đã phát hành cho lớp!' : '💾 Đã lưu nháp!', 'success');
-}
-
-// ══════════════════════════════════════
-// STUDENT — TASKS
-// ══════════════════════════════════════
-async function renderStudentTasks() {
-  const sessions = await getSessions();
-  const liveSession = sessions.find(s => s.status === 'live');
-  const body = document.getElementById('student-task-body');
-
-  if (!liveSession) {
-    body.innerHTML = `<div class="no-session"><div class="no-session-icon">📭</div><div class="no-session-title">Chưa có buổi học nào đang diễn ra</div><div class="no-session-sub">Giáo viên sẽ phát hành bài tập khi bắt đầu buổi học</div></div>`;
+// ════════════════════════════════════════════
+// MONITOR
+// ════════════════════════════════════════════
+async function renderMonitor() {
+  const sessionId = document.getElementById('monitor-sel').value;
+  const body = document.getElementById('monitor-body');
+  if (!sessionId) {
+    body.innerHTML='<div class="no-session"><div class="no-session-icon">📡</div><div class="no-session-title">Chọn buổi học để theo dõi</div></div>';
     return;
   }
+  const sessions = await db.getSessions();
+  const session  = sessions.find(s=>s.id===sessionId);
+  if (!session) return;
 
-  // Load existing submissions
-  const submissionData = {};
-  for (const t of liveSession.tasks) {
-    const key = `sub:${liveSession.id}:${currentUser.username}:${t.id}`;
-    submissionData[t.id] = await storageGet(key);
-  }
+  const students = Object.entries(ACCOUNTS.student).map(([uid,u])=>({uid,...u}));
+  const allSubs  = await db.getSubmissions(sessionId);
+  const presence = await db.getPresence(sessionId);
+  const now = Date.now();
 
-  const doneCount = liveSession.tasks.filter(t => submissionData[t.id]?.submitted).length;
-  const pct = Math.round(doneCount / liveSession.tasks.length * 100);
+  let activeCount=0, submittedCount=0, notStartedCount=0;
+  const cards = students.map(sv => {
+    const p = presence[sv.uid];
+    const lastSeen = p?.last_seen ? new Date(p.last_seen).getTime() : 0;
+    const elapsed = (now-lastSeen)/1000;
+    let cls='away', lbl='Chưa vào';
+    if (lastSeen>0){
+      if (elapsed<30){ cls='active'; lbl='Đang làm'; activeCount++; }
+      else if (elapsed<120){ cls='idle'; lbl='Không HĐ'; }
+      else { cls='idle'; lbl=`${Math.round(elapsed/60)}p trước`; }
+    } else { notStartedCount++; }
 
-  const taskCards = liveSession.tasks.map((task, i) => {
-    const sub = submissionData[task.id];
-    const isDone = sub?.submitted;
-    return `
-      <div class="task-card">
-        <div class="tc-header" onclick="toggleTask('tc-body-${i}')">
-          <div class="tc-num ${isDone?'done'}">${isDone?'✓':i+1}</div>
-          <div class="tc-title">${task.title}</div>
-          <span class="tc-type ${task.type}">${task.type==='code'?'💻 Code':'📎 Upload'}</span>
-          <span style="color:var(--ink3);font-size:18px;margin-left:8px" id="tc-arrow-${i}">›</span>
-        </div>
-        <div class="tc-body ${i===0&&!isDone?'open':''}" id="tc-body-${i}">
-          <div class="task-desc">${task.desc}</div>
-          ${task.type === 'code' ? renderCodeTask(task, i, sub, liveSession.id) : renderUploadTask(task, i, sub, liveSession.id)}
-        </div>
+    const svSubs  = allSubs[sv.uid]||{};
+    const doneCount = Object.values(svSubs).filter(s=>s?.submitted).length;
+    if (doneCount===session.tasks.length) submittedCount++;
+
+    const bars = session.tasks.map(t=>{
+      const sub=svSubs[t.id];
+      const pct=sub?.submitted?100:(sub?.progress||0);
+      const color=pct===100?'var(--green)':pct>0?'var(--amber)':'var(--border2)';
+      return `<div class="task-progress"><span class="tp-label">${t.title.split(':')[0]}</span><div class="tp-bar"><div class="tp-fill" style="width:${pct}%;background:${color}"></div></div><span class="tp-pct">${pct}%</span></div>`;
+    }).join('');
+
+    const ini=sv.name.split(' ').slice(-2).map(w=>w[0]).join('').toUpperCase();
+    return `<div class="smc ${cls}">
+      <div class="smc-top">
+        <div class="smc-avatar" style="background:${sv.color}">${ini}</div>
+        <div><div class="smc-name">${sv.name}</div><div class="smc-id">${sv.id}</div></div>
+        <div class="smc-status ${cls}">${lbl}</div>
       </div>
-    `;
+      ${bars}
+      <div style="margin-top:8px;font-size:11px;color:var(--ink3)">✅ ${doneCount}/${session.tasks.length} bài nộp</div>
+    </div>`;
   }).join('');
 
-  body.innerHTML = `
-    <div class="today-banner">
-      <div class="today-icon">📚</div>
-      <div>
-        <div class="today-title">${liveSession.title}</div>
-        <div class="today-sub">📅 ${formatDate(liveSession.date)} · ${liveSession.tasks.length} bài tập</div>
+  body.innerHTML=`
+    <div class="monitor-header">
+      <div class="live-dot"></div>
+      <div><div style="font-weight:800;font-size:16px">${session.title}</div>
+      <div style="font-size:12px;color:var(--ink2)">📅 ${fmtDate(session.date)} · ${session.tasks.length} bài</div></div>
+      <div class="monitor-stats">
+        <div class="mstat"><div class="mstat-val" style="color:var(--green)">${activeCount}</div><div class="mstat-label">Đang làm</div></div>
+        <div class="mstat"><div class="mstat-val" style="color:var(--amber)">${students.length-activeCount-notStartedCount}</div><div class="mstat-label">Không HĐ</div></div>
+        <div class="mstat"><div class="mstat-val">${notStartedCount}</div><div class="mstat-label">Chưa vào</div></div>
+        <div class="mstat"><div class="mstat-val" style="color:var(--accent)">${submittedCount}</div><div class="mstat-label">Hoàn tất</div></div>
       </div>
-      <div class="today-badge">🟢 Đang học</div>
     </div>
-    <div class="student-progress">
-      <div class="sp-label">Tiến độ hôm nay</div>
-      <div class="sp-bar-bg"><div class="sp-bar-fill" style="width:${pct}%"></div></div>
-      <div class="sp-pct">${pct}%</div>
-      <div style="font-size:13px;color:var(--ink2)">${doneCount}/${liveSession.tasks.length} bài</div>
-    </div>
-    <div class="task-cards">${taskCards}</div>
-  `;
-
-  // Update presence
-  updatePresence(liveSession.id, submissionData);
+    <div class="student-grid">${cards}</div>`;
 }
 
-function renderCodeTask(task, i, sub, sessionId) {
-  const savedCode = sub?.code || `# Bài ${i+1}: ${task.title}\n# Viết code của bạn dưới đây\n\n`;
-  const isDone = sub?.submitted;
-  return `
-    <div class="code-editor-wrap">
-      <div class="code-toolbar">
-        <span class="code-lang">python</span>
-        <div class="code-toolbar-right">
-          <button class="btn-sm" onclick="runCode('code-${i}','output-${i}')">▶ Chạy thử</button>
-        </div>
-      </div>
-      <textarea class="code-textarea" id="code-${i}" ${isDone?'readonly':''} oninput="autoSaveCode('${sessionId}','${task.id}',this.value,${i})">${savedCode}</textarea>
-    </div>
-    <div class="output-box" id="output-${i}">${sub?.lastOutput || '# Output sẽ hiển thị ở đây...'}</div>
-    <div class="submit-row">
-      ${isDone
-        ? `<button class="btn-action" style="background:var(--green);cursor:default">✅ Đã nộp bài</button><span class="submit-note">Nộp lúc ${new Date(sub.submittedAt).toLocaleTimeString('vi-VN')}</span>`
-        : `<button class="btn-action green" onclick="submitTask('${sessionId}','${task.id}','code-${i}','${i}')">📤 Nộp bài ${i+1}</button>
-           <span class="submit-note">Code sẽ được lưu và gửi cho giáo viên</span>`
-      }
-    </div>
-  `;
-}
-
-function renderUploadTask(task, i, sub, sessionId) {
-  const isDone = sub?.submitted;
-  return `
-    <div class="student-upload ${isDone?'uploaded':''}" onclick="${isDone?'':``document.getElementById('upl-${i}').click()``}" id="upload-zone-${i}">
-      <div style="font-size:28px;margin-bottom:8px">${isDone?'✅':'📎'}</div>
-      <div style="font-weight:700;color:var(--ink2)">${isDone?sub.fileName:'Kéo thả hoặc click để upload'}</div>
-      <div style="font-size:12px;color:var(--ink3);margin-top:4px">${isDone?`Nộp lúc ${new Date(sub.submittedAt).toLocaleTimeString('vi-VN')}`:'.ipynb · .py · .pdf'}</div>
-    </div>
-    <input type="file" id="upl-${i}" style="display:none" accept=".ipynb,.py,.pdf" onchange="submitUpload('${sessionId}','${task.id}',this,${i})" />
-    ${isDone?'<div class="submit-row"><button class="btn-action" style="background:var(--green);cursor:default">✅ Đã nộp bài</button></div>':''}
-  `;
-}
-
-function toggleTask(id) {
-  const el = document.getElementById(id);
-  el.classList.toggle('open');
-}
-
-async function autoSaveCode(sessionId, taskId, code, idx) {
-  const key = `sub:${sessionId}:${currentUser.username}:${taskId}`;
-  const existing = (await storageGet(key)) || {};
-  if (!existing.submitted) {
-    await storageSet(key, { ...existing, code, progress: Math.min(90, (code.split('\n').filter(l=>l.trim()&&!l.startsWith('#')).length)*10) });
-  }
-}
-
-function runCode(codeId, outputId) {
-  const code = document.getElementById(codeId).value;
-  const outEl = document.getElementById(outputId);
-  outEl.className = 'output-box';
-  try {
-    // Simple Python-like simulation
-    const lines = code.split('\n');
-    const printLines = [];
-    let inFunc = false;
-    for (const line of lines) {
-      const trimmed = line.trim();
-      if (trimmed.startsWith('print(')) {
-        const inner = trimmed.slice(6, -1).replace(/^["']|["']$/g, '');
-        printLines.push('→ ' + inner);
-      }
-    }
-    outEl.textContent = printLines.length
-      ? printLines.join('\n')
-      : '# Không có output (thêm print() để xem kết quả)';
-  } catch(e) {
-    outEl.className = 'output-box error';
-    outEl.textContent = 'Lỗi: ' + e.message;
-  }
-}
-
-async function submitTask(sessionId, taskId, codeId, idx) {
-  const code = document.getElementById(codeId).value.trim();
-  if (!code || code.startsWith('# Viết code') && code.split('\n').length < 4) {
-    showToast('Hãy viết code trước khi nộp!', 'error'); return;
-  }
-  const key = `sub:${sessionId}:${currentUser.username}:${taskId}`;
-  await storageSet(key, {
-    code, submitted: true,
-    submittedAt: Date.now(),
-    studentName: currentUser.name,
-    studentId: currentUser.id,
-    progress: 100,
-    lastOutput: document.getElementById('output-'+idx)?.textContent || ''
-  });
-  showToast('✅ Đã nộp bài thành công!', 'success');
-  await renderStudentTasks();
-}
-
-async function submitUpload(sessionId, taskId, input, idx) {
-  const file = input.files[0];
-  if (!file) return;
-  const key = `sub:${sessionId}:${currentUser.username}:${taskId}`;
-  await storageSet(key, {
-    submitted: true, fileName: file.name, fileSize: file.size,
-    submittedAt: Date.now(),
-    studentName: currentUser.name, studentId: currentUser.id,
-    progress: 100
-  });
-  showToast(`✅ Đã nộp "${file.name}"!`, 'success');
-  await renderStudentTasks();
-}
-
-// ══════════════════════════════════════
-// PRESENCE (heartbeat every 15s)
-// ══════════════════════════════════════
-async function updatePresence(sessionId, subMap) {
-  const key = `presence:${sessionId}:${currentUser.username}`;
-  const totalDone = Object.values(subMap).filter(s=>s&&s.submitted).length;
-  await storageSet(key, { lastSeen: Date.now(), studentName: currentUser.name, tasksDone: totalDone });
-}
-
-function startPresenceHeartbeat() {
-  setInterval(async () => {
-    const sessions = await getSessions();
-    const live = sessions.find(s=>s.status==='live');
-    if (live && currentUser) {
-      const key = `presence:${live.id}:${currentUser.username}`;
-      const existing = (await storageGet(key)) || {};
-      await storageSet(key, { ...existing, lastSeen: Date.now() });
-    }
+function startMonitorRefresh() {
+  if (monitorTimer) clearInterval(monitorTimer);
+  monitorTimer = setInterval(()=>{
+    if (document.getElementById('t-page-monitor').classList.contains('active')) renderMonitor();
   }, 15000);
 }
 
-// ══════════════════════════════════════
-// STUDENT HISTORY
-// ══════════════════════════════════════
-async function renderSvHistory() {
-  const sessions = await getSessions();
-  const rows = [];
-  for (const session of sessions) {
-    for (const task of session.tasks) {
-      const key = `sub:${session.id}:${currentUser.username}:${task.id}`;
-      const sub = await storageGet(key);
-      if (sub) rows.push({ session, task, sub });
-    }
-  }
-  const tbody = document.getElementById('sv-history-body');
-  if (!rows.length) {
-    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--ink3)">Chưa có lịch sử nộp bài</td></tr>';
+// ════════════════════════════════════════════
+// REPORT
+// ════════════════════════════════════════════
+async function renderReport() {
+  const sessionId = document.getElementById('report-sel').value;
+  const body = document.getElementById('report-body');
+  if (!sessionId){
+    body.innerHTML='<div class="no-session"><div class="no-session-icon">📊</div><div class="no-session-title">Chọn buổi học</div></div>';
     return;
   }
-  tbody.innerHTML = rows.reverse().map(({session,task,sub}) => `
+  const sessions = await db.getSessions();
+  const session  = sessions.find(s=>s.id===sessionId);
+  if (!session) return;
+
+  const students = Object.entries(ACCOUNTS.student).map(([uid,u])=>({uid,...u}));
+  const allSubs  = await db.getSubmissions(sessionId);
+
+  let totalSub=0;
+  const rows = students.map(sv=>{
+    const svSubs=allSubs[sv.uid]||{};
+    const dots=session.tasks.map(t=>{
+      const sub=svSubs[t.id];
+      if (!sub) return `<div class="tdot tdot-none">—</div>`;
+      if (sub.submitted){ totalSub++; return `<div class="tdot tdot-done">✓</div>`; }
+      return `<div class="tdot tdot-part">~</div>`;
+    }).join('');
+    const done=Object.values(svSubs).filter(s=>s?.submitted).length;
+    const pct=Math.round(done/session.tasks.length*100);
+    const chipCls=pct===100?'chip-green':pct>=50?'chip-amber':'chip-red';
+    const lastTs=Object.values(svSubs).filter(s=>s?.submittedAt).map(s=>s.submittedAt).sort().pop();
+    return `<tr>
+      <td><span class="td-name">${sv.name}</span></td>
+      <td style="font-family:var(--mono);font-size:12px;color:var(--ink3)">${sv.id}</td>
+      <td><div class="tdots">${dots}</div></td>
+      <td>${done}/${session.tasks.length}</td>
+      <td><span class="chip ${chipCls}">${pct}%</span></td>
+      <td style="font-size:12px;color:var(--ink3)">${lastTs?new Date(lastTs).toLocaleString('vi-VN'):'—'}</td>
+    </tr>`;
+  }).join('');
+
+  const totP=students.length*session.tasks.length;
+  const rate=Math.round(totalSub/totP*100);
+  const fullDone=students.filter(sv=>Object.values(allSubs[sv.uid]||{}).filter(x=>x?.submitted).length===session.tasks.length).length;
+  const notStarted=students.filter(sv=>!Object.keys(allSubs[sv.uid]||{}).length).length;
+
+  body.innerHTML=`
+    <div class="report-grid">
+      <div class="report-card"><div class="rc-label">Sĩ số</div><div class="rc-val">${students.length}</div><div class="rc-sub">sinh viên</div></div>
+      <div class="report-card"><div class="rc-label">Tỉ lệ nộp</div><div class="rc-val ${rate>=80?'green':rate>=50?'amber':'red'}">${rate}%</div><div class="rc-sub">${totalSub}/${totP} lượt</div></div>
+      <div class="report-card"><div class="rc-label">Hoàn tất 100%</div><div class="rc-val green">${fullDone}</div><div class="rc-sub">sinh viên</div></div>
+      <div class="report-card"><div class="rc-label">Chưa nộp</div><div class="rc-val red">${notStarted}</div><div class="rc-sub">sinh viên</div></div>
+    </div>
+    <div class="table-wrap"><table class="rtable">
+      <thead><tr><th>Họ tên</th><th>Mã SV</th><th>Tiến độ bài</th><th>Số bài nộp</th><th>Hoàn thành</th><th>Nộp lần cuối</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table></div>`;
+}
+
+async function exportCSV() {
+  const sessionId=document.getElementById('report-sel').value;
+  if (!sessionId){ showToast('Chọn buổi học trước!','error'); return; }
+  const sessions=await db.getSessions();
+  const session=sessions.find(s=>s.id===sessionId);
+  const students=Object.entries(ACCOUNTS.student).map(([uid,u])=>({uid,...u}));
+  const allSubs=await db.getSubmissions(sessionId);
+  let csv=`"Họ tên","Mã SV","Lớp",${session.tasks.map(t=>`"${t.title}"`).join(',')},"Tổng nộp","% HT"\n`;
+  students.forEach(sv=>{
+    const svSubs=allSubs[sv.uid]||{};
+    const vals=session.tasks.map(t=>svSubs[t.id]?.submitted?'"Đã nộp"':'"Chưa"').join(',');
+    const done=Object.values(svSubs).filter(s=>s?.submitted).length;
+    csv+=`"${sv.name}","${sv.id}","${sv.class}",${vals},${done},${Math.round(done/session.tasks.length*100)}%\n`;
+  });
+  const blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=`${session.title.replace(/[^a-z0-9]/gi,'_')}_baocao.csv`;
+  a.click();
+  showToast('✅ Đã xuất CSV!','success');
+}
+
+// ════════════════════════════════════════════
+// STUDENT TASKS
+// ════════════════════════════════════════════
+async function renderStudentTasks() {
+  const sessions = await db.getSessions();
+  const live = sessions.find(s=>s.status==='live');
+  const body = document.getElementById('sv-task-body');
+  if (!live){
+    body.innerHTML='<div class="no-session"><div class="no-session-icon">📭</div><div class="no-session-title">Chưa có buổi học đang diễn ra</div><div class="no-session-sub">Giáo viên sẽ phát hành bài tập khi bắt đầu buổi học</div></div>';
+    return;
+  }
+
+  // Load all subs for this student
+  const svSubsAll = await db.getSubmissions(live.id);
+  const svSubs = svSubsAll[currentUser.username] || {};
+  const done = live.tasks.filter(t=>svSubs[t.id]?.submitted).length;
+  const pct  = Math.round(done/live.tasks.length*100);
+
+  const cards = live.tasks.map((task,i)=>{
+    const sub=svSubs[task.id];
+    const isDone=sub?.submitted;
+    return `<div class="task-card">
+      <div class="tc-header" onclick="toggleTask(this,'tcb-${i}')">
+        <div class="tc-num ${isDone?'done':''}">${isDone?'✓':i+1}</div>
+        <div class="tc-title">${task.title}</div>
+        <span class="tc-type ${task.type}">${task.type==='code'?'💻 Code':'📎 Upload'}</span>
+        <span style="color:var(--ink3);font-size:18px;margin-left:8px">›</span>
+      </div>
+      <div class="tc-body ${i===0?'open':''}" id="tcb-${i}">
+        <div class="task-desc">${task.desc||'Xem đề bài từ giáo viên.'}</div>
+        ${task.type==='code' ? renderCodeTask(task,i,sub,live.id) : renderUploadTask(task,i,sub,live.id)}
+      </div>
+    </div>`;
+  }).join('');
+
+  body.innerHTML=`
+    <div class="today-banner">
+      <div class="today-icon">📚</div>
+      <div><div class="today-title">${live.title}</div>
+      <div class="today-sub">📅 ${fmtDate(live.date)} · ${live.tasks.length} bài tập${live.doc?` · 📎 ${live.doc}`:''}</div></div>
+      <div class="today-badge">🟢 Đang học</div>
+    </div>
+    <div class="sv-progress">
+      <div style="font-size:13px;font-weight:700">Tiến độ hôm nay</div>
+      <div class="svp-bar"><div class="svp-fill" style="width:${pct}%"></div></div>
+      <div style="font-family:var(--mono);font-size:14px;font-weight:700;color:var(--green)">${pct}%</div>
+      <div style="font-size:13px;color:var(--ink2)">${done}/${live.tasks.length} bài</div>
+    </div>
+    <div class="task-cards">${cards}</div>`;
+
+  updatePresence(live.id);
+}
+
+function renderCodeTask(task,i,sub,sessionId) {
+  const code=sub?.code||`# Bài ${i+1}: ${task.title}\n# Viết code của bạn ở đây\n\n`;
+  const isDone=sub?.submitted;
+  return `
+    <div class="code-wrap">
+      <div class="code-toolbar">
+        <span class="code-lang">python</span>
+        <div style="margin-left:auto">
+          <button class="btn-ghost" style="padding:5px 12px;font-size:12px" onclick="runCode('code-${i}','out-${i}')">▶ Chạy thử</button>
+        </div>
+      </div>
+      <textarea class="code-textarea" id="code-${i}" ${isDone?'readonly':''}
+        oninput="autoSave('${sessionId}','${task.id}',this.value)">${code}</textarea>
+    </div>
+    <div class="output-box" id="out-${i}">${sub?.lastOutput||'# Output hiển thị ở đây...'}</div>
+    <div class="submit-row">
+      ${isDone
+        ? `<button class="btn-action green" style="cursor:default">✅ Đã nộp · ${new Date(sub.submittedAt).toLocaleTimeString('vi-VN')}</button>`
+        : `<button class="btn-action green" onclick="submitCode('${sessionId}','${task.id}',${i})">📤 Nộp bài</button>
+           <span class="submit-note">Code tự lưu khi bạn gõ</span>`}
+    </div>`;
+}
+
+function renderUploadTask(task,i,sub,sessionId) {
+  const isDone=sub?.submitted;
+  return `
+    <div class="student-upload ${isDone?'uploaded':''}"
+      onclick="${isDone?'':``document.getElementById('upl-${i}').click()``}">
+      <div style="font-size:28px;margin-bottom:8px">${isDone?'✅':'📎'}</div>
+      <div style="font-weight:700;color:var(--ink2)">${isDone?sub.fileName:'Nhấn để upload file'}</div>
+      <div style="font-size:12px;color:var(--ink3);margin-top:4px">${isDone?`Nộp lúc ${new Date(sub.submittedAt).toLocaleTimeString('vi-VN')}`:'.ipynb · .py · .pdf'}</div>
+    </div>
+    <input type="file" id="upl-${i}" style="display:none" accept=".ipynb,.py,.pdf"
+      onchange="submitUpload('${sessionId}','${task.id}',this)"/>
+    ${isDone?'<div class="submit-row"><button class="btn-action green" style="cursor:default">✅ Đã nộp bài</button></div>':''}`;
+}
+
+function toggleTask(header, bodyId) {
+  document.querySelectorAll('.tc-body').forEach(b=>{ if(b.id!==bodyId) b.classList.remove('open'); });
+  document.getElementById(bodyId)?.classList.toggle('open');
+}
+
+let autoSaveTimer=null;
+function autoSave(sessionId, taskId, code) {
+  clearTimeout(autoSaveTimer);
+  autoSaveTimer = setTimeout(async()=>{
+    const existing=await db.getSubmission(sessionId, currentUser.username, taskId);
+    if (!existing?.submitted) {
+      const lines=code.split('\n').filter(l=>l.trim()&&!l.startsWith('#')).length;
+      await db.setSubmission(sessionId, currentUser.username, taskId, {
+        ...(existing||{}), code, progress:Math.min(80,lines*15),
+        studentName:currentUser.name, studentId:currentUser.id
+      });
+    }
+  }, 2000);
+}
+
+function runCode(codeId, outId) {
+  const code=document.getElementById(codeId)?.value||'';
+  const el=document.getElementById(outId); if(!el) return;
+  const prints=code.split('\n').filter(l=>l.trim().startsWith('print('))
+    .map(l=>{ const m=l.match(/print\((.+)\)/); return m?'→ '+m[1].replace(/^['"]|['"]$/g,''):''; });
+  el.textContent=prints.length?prints.join('\n'):'# Không có output (dùng print() để xem kết quả)';
+}
+
+async function submitCode(sessionId, taskId, idx) {
+  const code=document.getElementById(`code-${idx}`)?.value.trim()||'';
+  if (!code || code.split('\n').filter(l=>l.trim()&&!l.startsWith('#')).length<2) {
+    showToast('Hãy viết code trước khi nộp!','error'); return;
+  }
+  await db.setSubmission(sessionId, currentUser.username, taskId, {
+    code, submitted:true, submittedAt:Date.now(), progress:100,
+    studentName:currentUser.name, studentId:currentUser.id,
+    lastOutput:document.getElementById(`out-${idx}`)?.textContent||''
+  });
+  showToast('✅ Đã nộp bài!','success');
+  await renderStudentTasks();
+}
+
+async function submitUpload(sessionId, taskId, input) {
+  const file=input.files[0]; if(!file) return;
+  await db.setSubmission(sessionId, currentUser.username, taskId, {
+    submitted:true, fileName:file.name, fileSize:file.size,
+    submittedAt:Date.now(), progress:100,
+    studentName:currentUser.name, studentId:currentUser.id
+  });
+  showToast(`✅ Đã nộp "${file.name}"!`,'success');
+  await renderStudentTasks();
+}
+
+// ════════════════════════════════════════════
+// PRESENCE
+// ════════════════════════════════════════════
+async function updatePresence(sessionId) {
+  await db.setPresence(sessionId, currentUser.username, {
+    studentName: currentUser.name, studentId: currentUser.id
+  });
+}
+function startHeartbeat() {
+  setInterval(async()=>{
+    if (!currentUser) return;
+    const sessions=await db.getSessions();
+    const live=sessions.find(s=>s.status==='live');
+    if (live) updatePresence(live.id);
+  }, 20000);
+}
+
+// ════════════════════════════════════════════
+// STUDENT HISTORY
+// ════════════════════════════════════════════
+async function renderSvHistory() {
+  const sessions=await db.getSessions();
+  const rows=[];
+  for (const session of sessions) {
+    const allSubs=await db.getSubmissions(session.id);
+    const svSubs=allSubs[currentUser.username]||{};
+    for (const task of session.tasks) {
+      const sub=svSubs[task.id];
+      if (sub?.submitted) rows.push({session,task,sub});
+    }
+  }
+  const tbody=document.getElementById('sv-history-body');
+  if (!rows.length){ tbody.innerHTML='<tr><td colspan="5" style="text-align:center;padding:32px;color:var(--ink3)">Chưa có lịch sử nộp bài</td></tr>'; return; }
+  tbody.innerHTML=rows.reverse().map(({session,task,sub})=>`
     <tr>
-      <td><span class="td-name">${session.title.split('—')[0].trim()}</span></td>
+      <td><span class="td-name">${session.title}</span></td>
       <td>${task.title}</td>
       <td><span class="tc-type ${task.type}" style="font-size:11px;padding:2px 7px;border-radius:4px">${task.type==='code'?'💻 Code':'📎 Upload'}</span></td>
-      <td><span class="score-chip chip-green">✅ Đã nộp</span></td>
-      <td><span class="score-chip chip-gray">—</span></td>
+      <td><span class="chip chip-green">✅ Đã nộp</span></td>
       <td style="font-size:12px;color:var(--ink3)">${new Date(sub.submittedAt).toLocaleString('vi-VN')}</td>
-    </tr>
-  `).join('');
+    </tr>`).join('');
 }
 
-// ══════════════════════════════════════
+// ════════════════════════════════════════════
 // NAV
-// ══════════════════════════════════════
-function teacherTab(name, el) {
+// ════════════════════════════════════════════
+function teacherTab(name,el){
   document.querySelectorAll('#screen-teacher .page').forEach(p=>p.classList.remove('active'));
-  document.querySelectorAll('.topnav-tabs .tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('#screen-teacher .tab').forEach(t=>t.classList.remove('active'));
   document.getElementById('t-page-'+name).classList.add('active');
   if(el) el.classList.add('active');
-  if(name==='monitor') { renderMonitor(); startMonitorAutoRefresh(); }
+  if(name==='monitor') renderMonitor();
   if(name==='report') renderReport();
 }
-
-function studentTab(name, el) {
+function studentTab(name,el){
   document.querySelectorAll('#screen-student .page').forEach(p=>p.classList.remove('active'));
-  document.querySelectorAll('#screen-student .topnav-tabs .tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('#screen-student .tab').forEach(t=>t.classList.remove('active'));
   document.getElementById('s-page-'+name).classList.add('active');
   if(el) el.classList.add('active');
   if(name==='history') renderSvHistory();
 }
 
-// ══════════════════════════════════════
+// ════════════════════════════════════════════
 // UTILS
-// ══════════════════════════════════════
-function formatDate(d) {
-  const date = new Date(d);
-  return date.toLocaleDateString('vi-VN', { weekday:'long', day:'2-digit', month:'2-digit', year:'numeric' });
+// ════════════════════════════════════════════
+function fmtDate(d){ return new Date(d).toLocaleDateString('vi-VN',{weekday:'long',day:'2-digit',month:'2-digit',year:'numeric'}); }
+function showToast(msg,type=''){
+  const el=document.getElementById('toast');
+  el.textContent=msg; el.className='toast show '+(type||'');
+  setTimeout(()=>el.classList.remove('show'),3000);
 }
 
-function showToast(msg, type='') {
-  const el = document.getElementById('toast');
-  el.textContent = msg;
-  el.className = 'toast show ' + type;
-  setTimeout(() => el.classList.remove('show'), 3000);
-}
-
-// Init default date
-document.addEventListener('DOMContentLoaded', () => {
-  document.getElementById('new-session-date').value = new Date().toISOString().slice(0,10);
-});
+boot();
 </script>
 </body>
 </html>
