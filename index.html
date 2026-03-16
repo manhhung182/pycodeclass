@@ -828,7 +828,14 @@ function renderSessionList(sessions) {
 }
 
 function populateSelects(sessions) {
-  const opts = sessions.map(s=>`<option value="${s.id}">${s.title}</option>`).join('');
+  // Dropdown Monitor & Báo cáo: buổi mới nhất (ngày lớn nhất) ở trên cùng
+  const sorted = [...sessions].sort((a,b)=>{
+    if (!a.date && !b.date) return 0;
+    if (!a.date) return 1;
+    if (!b.date) return -1;
+    return b.date.localeCompare(a.date);
+  });
+  const opts = sorted.map(s=>`<option value="${s.id}">${s.title}</option>`).join('');
   document.getElementById('monitor-sel').innerHTML = '<option value="">— Chọn buổi học —</option>'+opts;
   document.getElementById('report-sel').innerHTML  = '<option value="">— Chọn buổi học —</option>'+opts;
 }
