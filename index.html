@@ -199,6 +199,25 @@ body{font-family:var(--sans);background:var(--bg);color:var(--ink);min-height:10
 .toast.show{transform:translateY(0);opacity:1;}
 .toast.success{background:var(--green);} .toast.error{background:var(--red);}
 
+/* SCORE */
+.score-chip{display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;font-family:var(--mono);font-size:12px;font-weight:700;}
+.score-10{background:var(--green-l);color:var(--green);}
+.score-8{background:var(--green-l);color:var(--green);}
+.score-6{background:var(--amber-l);color:var(--amber);}
+.score-low{background:var(--red-l);color:var(--red);}
+.score-zero{background:var(--bg2);color:var(--ink3);}
+
+/* CODE VIEWER MODAL */
+.modal-wide{width:720px;max-width:95vw;}
+.code-viewer{background:#1e1e2e;border-radius:var(--r);padding:16px;font-family:var(--mono);font-size:12px;color:#cdd6f4;line-height:1.8;white-space:pre-wrap;max-height:320px;overflow-y:auto;margin:10px 0;}
+.task-result-block{background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;margin-bottom:10px;}
+.task-result-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+.task-result-title{font-weight:700;font-size:14px;}
+.tc-mini{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;}
+.tc-mini-item{padding:3px 9px;border-radius:4px;font-size:11px;font-family:var(--mono);font-weight:600;}
+.tc-mini-pass{background:var(--green-l);color:var(--green);}
+.tc-mini-fail{background:var(--red-l);color:var(--red);}
+
 /* STUDENT MANAGEMENT */
 .sv-toolbar{display:flex;gap:10px;align-items:center;margin-bottom:20px;flex-wrap:wrap;}
 .sv-search{flex:1;min-width:200px;padding:9px 14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);font-family:var(--sans);font-size:13px;color:var(--ink);outline:none;transition:border-color .15s;}
@@ -470,11 +489,27 @@ body{font-family:var(--sans);background:var(--bg);color:var(--ink);min-height:10
   </div>
 </div>
 
+<!-- CODE VIEWER MODAL -->
+<div class="modal-overlay" id="code-viewer-modal">
+  <div class="modal modal-wide">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title" id="cv-student-name">Xem bài nộp</div>
+        <div style="font-size:12px;color:var(--ink3);margin-top:3px" id="cv-session-title"></div>
+      </div>
+      <button class="modal-close" onclick="closeCodeViewer()">✕</button>
+    </div>
+    <div class="modal-body" id="cv-body">
+      <div style="text-align:center;padding:32px;color:var(--ink3)">Đang tải...</div>
+    </div>
+  </div>
+</div>
+
 <!-- CREATE MODAL -->
 <div class="modal-overlay" id="create-modal">
   <div class="modal">
     <div class="modal-header">
-      <div class="modal-title" id="modal-title">Tạo buổi học mới</div>
+      <div class="modal-title">Tạo buổi học mới</div>
       <button class="modal-close" onclick="closeModal()">✕</button>
     </div>
     <div class="modal-body">
@@ -522,10 +557,9 @@ const SUPABASE_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFz
 const ACCOUNTS = {
   teacher: {
     'gv_nguyenvan': { pw:'123456', name:'Nguyễn Văn Minh', color:'#7c3aed' },
-    'gv_manhhung': { pw:'utc@123456', name:'Nguyễn Mạnh Hùng', color:'#7c3aed' },
   },
   student: {
-    'sv001': { pw:'abc123', name:'Nguyễn Thị An',  id:'SV2024001', class:'CNTT-K22A', color:'#2563eb' },
+    'sv001': { pw:'abc123', name:'demo SV',  id:'SV2024001', class:'CNTT-K22A', color:'#2563eb' },
   }
 };
 
@@ -555,14 +589,7 @@ const db = {
 
   async getSessions() {
     const rows = await this.query('sessions','GET',null,'?order=updated_at.desc');
-    const sessions = (rows||[]).map(r=>r.data);
-    // Sắp xếp: có ngày → tăng dần, không có ngày (Nháp chưa điền) → xuống cuối
-    return sessions.sort((a,b)=>{
-      if (!a.date && !b.date) return 0;
-      if (!a.date) return 1;
-      if (!b.date) return -1;
-      return a.date.localeCompare(b.date);
-    });
+    return (rows||[]).map(r=>r.data);
   },
   async upsertSession(session) {
     await this.query('sessions','POST',{ id:session.id, data:session },
@@ -574,13 +601,6 @@ const db = {
       body: JSON.stringify({ data: session, updated_at: new Date().toISOString() })
     });
   },
-  async deleteSession(id) {
-    await fetch(`${SUPABASE_URL}/rest/v1/sessions?id=eq.${id}`, {
-      method: 'DELETE',
-      headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
-    });
-  },
-
   async setSession(session) {
     // Try update first, then insert
     const patch = await fetch(`${SUPABASE_URL}/rest/v1/sessions?id=eq.${session.id}`, {
@@ -692,7 +712,6 @@ let currentUser = null;
 let newTasks = [];
 let monitorTimer = null;
 let configOK = false;
-let editingSessionId = null;  // null = tạo mới, có id = đang sửa
 
 // ════════════════════════════════════════════
 // BOOT
@@ -793,36 +812,18 @@ function renderSessionList(sessions) {
     el.innerHTML='<div class="no-session"><div class="no-session-icon">📚</div><div class="no-session-title">Chưa có buổi học nào</div><div class="no-session-sub">Nhấn "+ Tạo buổi học mới" để bắt đầu</div></div>';
     return;
   }
-  el.innerHTML = sessions.map(s=>{
-    const isDraft = s.status==='draft';
-    const isLive  = s.status==='live';
-    const dateLabel = s.date ? s.date.slice(5) : '--';
-    const numStyle  = isLive  ? 'background:var(--green-l);color:var(--green)'
-                    : isDraft ? 'background:var(--amber-l);color:var(--amber)' : '';
-    const statusText = isLive ? '🟢 Đang học' : s.status==='done' ? 'Đã kết thúc' : '📝 Nháp';
-    const metaDate   = s.date ? fmtDate(s.date) : 'Chưa có ngày';
-    const actions = isLive
-      ? `<button onclick="event.stopPropagation();endSession('${s.id}')" style="font-size:11px;color:var(--ink3);background:none;border:none;cursor:pointer;padding:0">Kết thúc buổi</button>`
-      : isDraft
-      ? `<div style="display:flex;gap:6px" onclick="event.stopPropagation()">
-           <button class="btn-ghost" style="padding:5px 10px;font-size:12px" onclick="editSession('${s.id}')">✏️ Sửa</button>
-           <button class="btn-ghost" style="padding:5px 10px;font-size:12px;color:var(--red);border-color:rgba(220,38,38,.3)" onclick="deleteSession('${s.id}','${s.title.replace(/'/g,"\'")}')">🗑 Xóa</button>
-         </div>`
-      : '';
-    const clickHandler = isDraft ? '' : `onclick="openMonitorFor('${s.id}')"`;
-    return `
-    <div class="session-card ${isLive?'live':''}" ${clickHandler}>
-      <div class="session-num" style="${numStyle}">${dateLabel}</div>
+  el.innerHTML = sessions.map(s=>`
+    <div class="session-card ${s.status==='live'?'live':''}" onclick="openMonitorFor('${s.id}')">
+      <div class="session-num" style="${s.status==='live'?'background:var(--green-l);color:var(--green)':''}">${s.date.slice(5)}</div>
       <div class="session-info">
         <div class="session-title">${s.title}</div>
-        <div class="session-meta">📅 ${metaDate} · ${s.tasks.length} bài tập${s.doc?` · 📎 ${s.doc}`:''}</div>
+        <div class="session-meta">📅 ${fmtDate(s.date)} · ${s.tasks.length} bài tập${s.doc?` · 📎 ${s.doc}`:''}</div>
       </div>
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px">
-        <span class="status-pill status-${s.status}">${statusText}</span>
-        ${actions}
+        <span class="status-pill status-${s.status}">${s.status==='live'?'🟢 Đang học':s.status==='done'?'Đã kết thúc':'Nháp'}</span>
+        ${s.status==='live'?`<button onclick="event.stopPropagation();endSession('${s.id}')" style="font-size:11px;color:var(--ink3);background:none;border:none;cursor:pointer;padding:0">Kết thúc buổi</button>`:''}
       </div>
-    </div>`;
-  }).join('');
+    </div>`).join('');
 }
 
 function populateSelects(sessions) {
@@ -840,31 +841,6 @@ async function endSession(id) {
   showToast('Buổi học đã kết thúc');
 }
 
-// ── Sửa buổi học (chỉ Nháp) ──
-async function editSession(id) {
-  const sessions = await db.getSessions();
-  const s = sessions.find(x=>x.id===id);
-  if (!s || s.status!=='draft') return;
-  // Điền dữ liệu cũ vào form
-  editingSessionId = id;
-  document.getElementById('new-title').value = s.title||'';
-  document.getElementById('new-date').value   = s.date||new Date().toISOString().slice(0,10);
-  document.getElementById('new-doc').value    = s.doc||'';
-  newTasks = (s.tasks||[]).map(t=>({...t}));
-  renderTaskBuilder();
-  document.getElementById('modal-title').textContent = '✏️ Sửa buổi học';
-  document.getElementById('create-modal').classList.add('open');
-}
-
-// ── Xóa buổi học (chỉ Nháp) ──
-async function deleteSession(id, title) {
-  if (!confirm(`Xóa buổi học "${title}"?
-Thao tác này không thể hoàn tác.`)) return;
-  await db.deleteSession(id);
-  await loadSessions();
-  showToast('🗑 Đã xóa buổi học', 'success');
-}
-
 function openMonitorFor(id) {
   document.getElementById('monitor-sel').value=id;
   teacherTab('monitor', document.querySelectorAll('.topnav-tabs .tab')[1]);
@@ -875,12 +851,10 @@ function openMonitorFor(id) {
 // CREATE SESSION MODAL
 // ════════════════════════════════════════════
 function openModal() {
-  editingSessionId = null;
   newTasks=[];
   document.getElementById('new-title').value='';
   document.getElementById('new-date').value=new Date().toISOString().slice(0,10);
   document.getElementById('new-doc').value='';
-  document.getElementById('modal-title').textContent = 'Tạo buổi học mới';
   addTask(); addTask();
   document.getElementById('create-modal').classList.add('open');
 }
@@ -912,25 +886,11 @@ async function saveSession(status) {
   if (!title){ showToast('Nhập tên buổi học!','error'); return; }
   if (!newTasks.length){ showToast('Thêm ít nhất 1 bài tập!','error'); return; }
   if (newTasks.some(t=>!t.title.trim())){ showToast('Điền tên cho tất cả bài tập!','error'); return; }
-  if (editingSessionId) {
-    // Đang sửa buổi Nháp
-    const sessions = await db.getSessions();
-    const existing = sessions.find(s=>s.id===editingSessionId);
-    if (!existing) { showToast('Không tìm thấy buổi học!','error'); return; }
-    const session = { ...existing, title, date, status, doc, tasks:newTasks.map((t,i)=>({id:`t${i+1}`,...t})) };
-    await db.setSession(session);
-    editingSessionId = null;
-    closeModal();
-    await loadSessions();
-    showToast(status==='live'?'🚀 Buổi học đã phát hành!':'💾 Đã cập nhật nháp!','success');
-  } else {
-    // Tạo mới
-    const session = { id:'sess_'+Date.now(), title, date, status, doc, tasks:newTasks.map((t,i)=>({id:`t${i+1}`,...t})), createdAt:Date.now() };
-    await db.setSession(session);
-    closeModal();
-    await loadSessions();
-    showToast(status==='live'?'🚀 Buổi học đã phát hành!':'💾 Đã lưu nháp!','success');
-  }
+  const session = { id:'sess_'+Date.now(), title, date, status, doc, tasks:newTasks.map((t,i)=>({id:`t${i+1}`,...t})), createdAt:Date.now() };
+  await db.setSession(session);
+  closeModal();
+  await loadSessions();
+  showToast(status==='live'?'🚀 Buổi học đã phát hành!':'💾 Đã lưu nháp!','success');
 }
 
 // ════════════════════════════════════════════
@@ -1026,7 +986,7 @@ async function renderReport() {
   const students = Object.entries(ACCOUNTS.student).map(([uid,u])=>({uid,...u}));
   const allSubs  = await db.getSubmissions(sessionId);
 
-  let totalSub=0;
+  let totalSub=0, totalScore=0;
   const rows = students.map(sv=>{
     const svSubs=allSubs[sv.uid]||{};
     const dots=session.tasks.map(t=>{
@@ -1039,12 +999,16 @@ async function renderReport() {
     const pct=Math.round(done/session.tasks.length*100);
     const chipCls=pct===100?'chip-green':pct>=50?'chip-amber':'chip-red';
     const lastTs=Object.values(svSubs).filter(s=>s?.submittedAt).map(s=>s.submittedAt).sort().pop();
-    return `<tr>
+    const score = avgScore(session.tasks, svSubs);
+    totalScore += score;
+    const scoreCls = scoreChipClass(score);
+    return `<tr style="cursor:pointer" onclick="openCodeViewer('${sv.uid}','${sv.name.replace(/'/g,"\'")}','${sessionId}')" title="Click để xem bài nộp">
       <td><span class="td-name">${sv.name}</span></td>
       <td style="font-family:var(--mono);font-size:12px;color:var(--ink3)">${sv.id}</td>
       <td><div class="tdots">${dots}</div></td>
       <td>${done}/${session.tasks.length}</td>
       <td><span class="chip ${chipCls}">${pct}%</span></td>
+      <td><span class="score-chip ${scoreCls}">${score > 0 ? score + 'đ' : '—'}</span></td>
       <td style="font-size:12px;color:var(--ink3)">${lastTs?new Date(lastTs).toLocaleString('vi-VN'):'—'}</td>
     </tr>`;
   }).join('');
@@ -1053,16 +1017,22 @@ async function renderReport() {
   const rate=Math.round(totalSub/totP*100);
   const fullDone=students.filter(sv=>Object.values(allSubs[sv.uid]||{}).filter(x=>x?.submitted).length===session.tasks.length).length;
   const notStarted=students.filter(sv=>!Object.keys(allSubs[sv.uid]||{}).length).length;
+  const avgScoreAll = students.length ? Math.round(totalScore/students.length*10)/10 : 0;
 
   body.innerHTML=`
-    <div class="report-grid">
+    <div class="report-grid" style="grid-template-columns:repeat(5,1fr)">
       <div class="report-card"><div class="rc-label">Sĩ số</div><div class="rc-val">${students.length}</div><div class="rc-sub">sinh viên</div></div>
       <div class="report-card"><div class="rc-label">Tỉ lệ nộp</div><div class="rc-val ${rate>=80?'green':rate>=50?'amber':'red'}">${rate}%</div><div class="rc-sub">${totalSub}/${totP} lượt</div></div>
+      <div class="report-card"><div class="rc-label">Điểm TB lớp</div><div class="rc-val ${avgScoreAll>=7?'green':avgScoreAll>=5?'amber':'red'}">${avgScoreAll}</div><div class="rc-sub">/ 10</div></div>
       <div class="report-card"><div class="rc-label">Hoàn tất 100%</div><div class="rc-val green">${fullDone}</div><div class="rc-sub">sinh viên</div></div>
       <div class="report-card"><div class="rc-label">Chưa nộp</div><div class="rc-val red">${notStarted}</div><div class="rc-sub">sinh viên</div></div>
     </div>
+    <div class="tip" style="margin-bottom:12px">
+      <div class="tip-icon">💡</div>
+      <div class="tip-text">Nhấn vào tên sinh viên để xem chi tiết bài nộp và kết quả test case.</div>
+    </div>
     <div class="table-wrap"><table class="rtable">
-      <thead><tr><th>Họ tên</th><th>Mã SV</th><th>Tiến độ bài</th><th>Số bài nộp</th><th>Hoàn thành</th><th>Nộp lần cuối</th></tr></thead>
+      <thead><tr><th>Họ tên</th><th>Mã SV</th><th>Tiến độ bài</th><th>Số bài nộp</th><th>Hoàn thành</th><th>Điểm TB</th><th>Nộp lần cuối</th></tr></thead>
       <tbody>${rows}</tbody>
     </table></div>`;
 }
@@ -1074,12 +1044,14 @@ async function exportCSV() {
   const session=sessions.find(s=>s.id===sessionId);
   const students=Object.entries(ACCOUNTS.student).map(([uid,u])=>({uid,...u}));
   const allSubs=await db.getSubmissions(sessionId);
-  let csv=`"Họ tên","Mã SV","Lớp",${session.tasks.map(t=>`"${t.title}"`).join(',')},"Tổng nộp","% HT"\n`;
+  const taskHeaders = session.tasks.map(t=>`"${t.title}"`).join(',');
+  let csv=`"Họ tên","Mã SV","Lớp",${taskHeaders},"Tổng nộp","% HT","Điểm TB"\n`;
   students.forEach(sv=>{
     const svSubs=allSubs[sv.uid]||{};
     const vals=session.tasks.map(t=>svSubs[t.id]?.submitted?'"Đã nộp"':'"Chưa"').join(',');
     const done=Object.values(svSubs).filter(s=>s?.submitted).length;
-    csv+=`"${sv.name}","${sv.id}","${sv.class}",${vals},${done},${Math.round(done/session.tasks.length*100)}%\n`;
+    const score=avgScore(session.tasks, svSubs);
+    csv+=`"${sv.name}","${sv.id}","${sv.class||''}",${vals},${done},${Math.round(done/session.tasks.length*100)}%,${score}\n`;
   });
   const blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});
   const a=document.createElement('a');
@@ -1089,9 +1061,7 @@ async function exportCSV() {
   showToast('✅ Đã xuất CSV!','success');
 }
 
-// ════════════════════════════════════════════
-// STUDENT TASKS
-// ════════════════════════════════════════════
+
 async function renderStudentTasks() {
   const sessions = await db.getSessions();
   const live = sessions.find(s=>s.status==='live');
@@ -1294,6 +1264,140 @@ function studentTab(name,el){
   document.getElementById('s-page-'+name).classList.add('active');
   if(el) el.classList.add('active');
   if(name==='history') renderSvHistory();
+}
+
+// ════════════════════════════════════════════
+// CODE VIEWER
+// ════════════════════════════════════════════
+async function openCodeViewer(uid, name, sessionId) {
+  document.getElementById('cv-student-name').textContent = '📋 ' + name;
+  document.getElementById('cv-body').innerHTML = '<div style="text-align:center;padding:32px;color:var(--ink3)"><div class="spinner" style="margin:0 auto 12px"></div>Đang tải...</div>';
+  document.getElementById('code-viewer-modal').classList.add('open');
+
+  const sessions = await db.getSessions();
+  const session  = sessions.find(s=>s.id===sessionId);
+  if (!session) return;
+  document.getElementById('cv-session-title').textContent = session.title + ' · ' + (session.date ? fmtDate(session.date) : '');
+
+  const allSubs = await db.getSubmissions(sessionId);
+  const svSubs  = allSubs[uid] || {};
+
+  const blocks = session.tasks.map((task, i) => {
+    const sub = svSubs[task.id];
+    const score = calcScore(task, sub);
+    const scoreCls = scoreChipClass(score);
+
+    if (!sub || !sub.submitted) {
+      return `<div class="task-result-block">
+        <div class="task-result-header">
+          <span class="task-result-title">${i+1}. ${task.title}</span>
+          <span class="score-chip score-zero">Chưa nộp</span>
+        </div>
+      </div>`;
+    }
+
+    if (task.type === 'upload') {
+      return `<div class="task-result-block">
+        <div class="task-result-header">
+          <span class="task-result-title">${i+1}. ${task.title} <span style="font-size:11px;color:var(--ink3)">📎 Upload</span></span>
+          <span class="score-chip ${scoreCls}">${score}đ</span>
+        </div>
+        <div style="font-size:13px;color:var(--ink2)">📎 ${sub.fileName || 'file'} · ${sub.fileSize ? Math.round(sub.fileSize/1024)+'KB' : ''}</div>
+        <div style="font-size:12px;color:var(--ink3);margin-top:4px">Nộp lúc ${new Date(sub.submittedAt).toLocaleString('vi-VN')}</div>
+      </div>`;
+    }
+
+    // Bài code
+    const hasTC = task.testcases && task.testcases.filter(tc=>tc.expected?.trim()).length > 0;
+    const codeLines = (sub.code||'').split('\n').filter(l=>l.trim()&&!l.trim().startsWith('#')).length;
+    const tcResults = sub.tcResults || [];
+    const tcHtml = hasTC && tcResults.length ? `
+      <div style="margin-top:8px;font-size:12px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.04em">Test cases</div>
+      <div class="tc-mini">
+        ${tcResults.map((r,j)=>`<span class="tc-mini-item ${r.pass?'tc-mini-pass':'tc-mini-fail'}">TC${j+1}: ${r.pass?'✅':'❌'} ${r.pass?'Pass':'Fail'}</span>`).join('')}
+      </div>` : (hasTC ? '<div style="font-size:12px;color:var(--amber);margin-top:6px">⚠️ Chưa chạy test case</div>' : '');
+
+    // Breakdown điểm
+    const breakdown = [];
+    if (hasTC) {
+      breakdown.push(`Nộp bài: 4đ`);
+      const passed = tcResults.filter(r=>r.pass).length;
+      const total  = task.testcases.filter(tc=>tc.expected?.trim()).length;
+      breakdown.push(`Test case: ${passed}/${total} × 4đ = ${total>0?Math.round(passed/total*4*10)/10:0}đ`);
+      breakdown.push(`Code ≥5 dòng: ${codeLines>=5?'2đ':'0đ ('+codeLines+' dòng)'}`);
+    } else {
+      breakdown.push(`Nộp bài: 6đ`);
+      breakdown.push(`Code ≥5 dòng: ${codeLines>=5?'4đ':'0đ ('+codeLines+' dòng)'}`);
+    }
+
+    return `<div class="task-result-block">
+      <div class="task-result-header">
+        <span class="task-result-title">${i+1}. ${task.title} <span style="font-size:11px;color:var(--ink3)">💻 Code</span></span>
+        <span class="score-chip ${scoreCls}">${score}đ</span>
+      </div>
+      <div style="font-size:11px;color:var(--ink3);margin-bottom:6px">${breakdown.join(' · ')}</div>
+      ${tcHtml}
+      <div style="margin-top:10px;font-size:12px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.04em">Code đã nộp</div>
+      <div class="code-viewer">${(sub.code||'').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>
+      <div style="font-size:12px;color:var(--ink3)">Nộp lúc ${new Date(sub.submittedAt).toLocaleString('vi-VN')}</div>
+    </div>`;
+  }).join('');
+
+  const totalAvg = avgScore(session.tasks, svSubs);
+  const totalCls = scoreChipClass(totalAvg);
+
+  document.getElementById('cv-body').innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border)">
+      <div style="font-size:13px;color:var(--ink2)">${session.tasks.length} bài tập</div>
+      <div style="display:flex;align-items:center;gap:8px;font-size:14px;font-weight:700">
+        Điểm TB: <span class="score-chip ${totalCls}" style="font-size:14px">${totalAvg}đ</span>
+      </div>
+    </div>
+    ${blocks}`;
+}
+
+function closeCodeViewer() {
+  document.getElementById('code-viewer-modal').classList.remove('open');
+}
+
+// ════════════════════════════════════════════
+// SCORING
+// ════════════════════════════════════════════
+function calcScore(task, sub) {
+  if (!sub) return 0;
+  if (task.type === 'upload') {
+    return sub.submitted ? 10 : 0;
+  }
+  // Bài code
+  if (!sub.submitted) return 0;
+  const hasTC = task.testcases && task.testcases.filter(tc=>tc.expected?.trim()).length > 0;
+  const codeLines = (sub.code||'').split('\n').filter(l=>l.trim()&&!l.trim().startsWith('#')).length;
+  const longEnough = codeLines >= 5 ? 1 : 0;
+
+  if (hasTC) {
+    const tcList = task.testcases.filter(tc=>tc.expected?.trim());
+    const tcResults = sub.tcResults || [];
+    const passed = tcResults.filter(r=>r.pass).length;
+    const total = tcList.length;
+    const tcScore = total > 0 ? (passed / total) * 4 : 0;
+    return Math.round((4 + tcScore + longEnough * 2) * 10) / 10;
+  } else {
+    return Math.round((6 + longEnough * 4) * 10) / 10;
+  }
+}
+
+function scoreChipClass(score) {
+  if (score >= 9) return 'score-10';
+  if (score >= 7) return 'score-8';
+  if (score >= 5) return 'score-6';
+  if (score > 0)  return 'score-low';
+  return 'score-zero';
+}
+
+function avgScore(tasks, svSubs) {
+  if (!tasks.length) return 0;
+  const total = tasks.reduce((sum, t) => sum + calcScore(t, svSubs[t.id]), 0);
+  return Math.round(total / tasks.length * 10) / 10;
 }
 
 // ════════════════════════════════════════════
