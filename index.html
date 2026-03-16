@@ -218,6 +218,20 @@ body{font-family:var(--sans);background:var(--bg);color:var(--ink);min-height:10
 .tc-mini-pass{background:var(--green-l);color:var(--green);}
 .tc-mini-fail{background:var(--red-l);color:var(--red);}
 
+/* PYODIDE & TEST CASE */
+.pyodide-loading{display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--amber-l);border-radius:var(--r);font-size:12px;color:var(--amber);font-weight:600;margin:6px 0;}
+.pyodide-loading .spinner{width:14px;height:14px;border-width:2px;border-top-color:var(--amber);flex-shrink:0;}
+.tc-results{display:flex;flex-direction:column;gap:6px;margin:8px 0;}
+.tc-result-row{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:var(--r);font-size:13px;font-family:var(--mono);}
+.tc-result-row.pass{background:var(--green-l);border:1px solid rgba(22,163,74,.2);}
+.tc-result-row.fail{background:var(--red-l);border:1px solid rgba(220,38,38,.2);}
+.tc-result-icon{font-size:15px;flex-shrink:0;}
+.tc-result-info{flex:1;font-size:12px;line-height:1.6;}
+.tc-score{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;font-size:13px;font-weight:700;margin:6px 0;}
+.tc-score.all-pass{background:var(--green-l);color:var(--green);}
+.tc-score.partial{background:var(--amber-l);color:var(--amber);}
+.tc-score.all-fail{background:var(--red-l);color:var(--red);}
+
 /* STUDENT MANAGEMENT */
 .sv-toolbar{display:flex;gap:10px;align-items:center;margin-bottom:20px;flex-wrap:wrap;}
 .sv-search{flex:1;min-width:200px;padding:9px 14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);font-family:var(--sans);font-size:13px;color:var(--ink);outline:none;transition:border-color .15s;}
@@ -1123,24 +1137,48 @@ async function renderStudentTasks() {
 function renderCodeTask(task,i,sub,sessionId) {
   const code=sub?.code||`# Bài ${i+1}: ${task.title}\n# Viết code của bạn ở đây\n\n`;
   const isDone=sub?.submitted;
+  const hasTC = task.testcases && task.testcases.filter(tc=>tc.expected?.trim()).length>0;
+  const tcResultsHtml = sub?.tcResults ? renderTcResults(sub.tcResults) : '';
+  const tcList = hasTC ? JSON.stringify(task.testcases.filter(tc=>tc.expected?.trim())).replace(/"/g,'&quot;') : '[]';
   return `
     <div class="code-wrap">
       <div class="code-toolbar">
         <span class="code-lang">python</span>
         <div style="margin-left:auto">
-          <button class="btn-ghost" style="padding:5px 12px;font-size:12px" onclick="runCode('code-${i}','out-${i}')">▶ Chạy thử</button>
+          <button class="btn-ghost" style="padding:5px 12px;font-size:12px" onclick="runCodePyodide('code-${i}','out-${i}','tc-results-${i}',${tcList})">▶ Chạy thử</button>
         </div>
       </div>
       <textarea class="code-textarea" id="code-${i}" ${isDone?'readonly':''}
+        data-session="${sessionId}" data-task="${task.id}"
         oninput="autoSave('${sessionId}','${task.id}',this.value)">${code}</textarea>
     </div>
+    <div id="pyodide-status-${i}"></div>
     <div class="output-box" id="out-${i}">${sub?.lastOutput||'# Output hiển thị ở đây...'}</div>
+    ${hasTC ? `<div id="tc-results-${i}" class="tc-results">${tcResultsHtml}</div>` : ''}
     <div class="submit-row">
       ${isDone
         ? `<button class="btn-action green" style="cursor:default">✅ Đã nộp · ${new Date(sub.submittedAt).toLocaleTimeString('vi-VN')}</button>`
         : `<button class="btn-action green" onclick="submitCode('${sessionId}','${task.id}',${i})">📤 Nộp bài</button>
            <span class="submit-note">Code tự lưu khi bạn gõ</span>`}
     </div>`;
+}
+
+function renderTcResults(tcResults) {
+  if (!tcResults || !tcResults.length) return '';
+  const pass = tcResults.filter(r=>r.pass).length;
+  const total = tcResults.length;
+  const scoreClass = pass===total?'all-pass':pass>0?'partial':'all-fail';
+  const rows = tcResults.map(r=>`
+    <div class="tc-result-row ${r.pass?'pass':'fail'}">
+      <span class="tc-result-icon">${r.pass?'✅':'❌'}</span>
+      <div class="tc-result-info">
+        <strong>${r.pass?'Pass':'Fail'}</strong>
+        ${r.input!==undefined&&r.input!==''?` · Input: <strong>${r.input}</strong>`:''}
+        · Expected: <strong>${r.expected}</strong>
+        ${!r.pass?` · Got: <strong>${r.actual||'(no output)'}</strong>`:''}
+      </div>
+    </div>`).join('');
+  return `<div class="tc-score ${scoreClass}">🎯 ${pass}/${total} test case đúng</div>${rows}`;
 }
 
 function renderUploadTask(task,i,sub,sessionId) {
@@ -1178,12 +1216,181 @@ function autoSave(sessionId, taskId, code) {
   }, 2000);
 }
 
-function runCode(codeId, outId) {
-  const code=document.getElementById(codeId)?.value||'';
-  const el=document.getElementById(outId); if(!el) return;
-  const prints=code.split('\n').filter(l=>l.trim().startsWith('print('))
-    .map(l=>{ const m=l.match(/print\((.+)\)/); return m?'→ '+m[1].replace(/^['"]|['"]$/g,''):''; });
-  el.textContent=prints.length?prints.join('\n'):'# Không có output (dùng print() để xem kết quả)';
+// ════════════════════════════════════════════
+// PYODIDE RUNNER
+// ════════════════════════════════════════════
+let pyodideInstance = null;
+let pyodideLoading = false;
+let pyodideQueue = [];
+
+// Các gói cần tải riêng (không có sẵn trong Pyodide)
+const LOADABLE_PACKAGES = ['numpy', 'pandas', 'matplotlib', 'scipy', 'sklearn', 'seaborn'];
+const loadedPackages = new Set();
+
+async function loadPyodideOnce() {
+  if (pyodideInstance) return pyodideInstance;
+  if (pyodideLoading) {
+    return new Promise(resolve => pyodideQueue.push(resolve));
+  }
+  pyodideLoading = true;
+  if (!document.getElementById('pyodide-script')) {
+    const s = document.createElement('script');
+    s.id = 'pyodide-script';
+    s.src = 'https://cdn.jsdelivr.net/pyodide/v0.25.1/full/pyodide.js';
+    document.head.appendChild(s);
+    await new Promise(r => s.onload = r);
+  }
+  pyodideInstance = await loadPyodide({ indexURL: 'https://cdn.jsdelivr.net/pyodide/v0.25.1/full/' });
+  pyodideLoading = false;
+  pyodideQueue.forEach(r => r(pyodideInstance));
+  pyodideQueue = [];
+  return pyodideInstance;
+}
+
+function detectPackages(code) {
+  // Tìm các thư viện cần tải từ code SV
+  const needed = [];
+  for (const pkg of LOADABLE_PACKAGES) {
+    const patterns = [
+      new RegExp(`^import\s+${pkg}`, 'm'),
+      new RegExp(`^from\s+${pkg}`, 'm'),
+      new RegExp(`^import\s+\w+\s*,\s*${pkg}`, 'm'),
+    ];
+    if (patterns.some(p => p.test(code)) && !loadedPackages.has(pkg)) {
+      needed.push(pkg);
+    }
+  }
+  // matplotlib.pyplot → cần matplotlib
+  if (/import matplotlib/.test(code) && !loadedPackages.has('matplotlib')) {
+    if (!needed.includes('matplotlib')) needed.push('matplotlib');
+  }
+  return needed;
+}
+
+async function runCodePyodide(codeId, outId, tcResultId, testcases) {
+  const code = document.getElementById(codeId)?.value || '';
+  const outEl = document.getElementById(outId);
+  const statusEl = document.getElementById(codeId.replace('code-', 'pyodide-status-'));
+  if (!outEl) return;
+
+  const showStatus = (msg) => {
+    if (statusEl) statusEl.innerHTML = `<div class="pyodide-loading"><div class="spinner"></div>${msg}</div>`;
+  };
+  const clearStatus = () => { if (statusEl) statusEl.innerHTML = ''; };
+
+  outEl.textContent = '# Đang chạy...';
+
+  try {
+    // Load Pyodide lần đầu
+    if (!pyodideInstance) showStatus('Đang tải Python runtime lần đầu (~5 giây)...');
+    const py = await loadPyodideOnce();
+
+    // Detect và tải packages cần thiết
+    const needed = detectPackages(code);
+    for (const pkg of needed) {
+      showStatus(`Đang tải ${pkg}... (lần đầu, ~10-20 giây)`);
+      try {
+        await py.loadPackage(pkg);
+        loadedPackages.add(pkg);
+      } catch(e) {
+        // Thử micropip nếu loadPackage không có
+        try {
+          await py.loadPackage('micropip');
+          const micropip = py.pyimport('micropip');
+          await micropip.install(pkg);
+          loadedPackages.add(pkg);
+        } catch(e2) {
+          outEl.textContent = `❌ Không thể tải thư viện "${pkg}": ${e2.message}`;
+          clearStatus(); return;
+        }
+      }
+    }
+    clearStatus();
+
+    // Patch matplotlib để không crash khi không có display
+    if (code.includes('matplotlib') || code.includes('plt.')) {
+      try {
+        py.runPython(`
+import sys
+try:
+    import matplotlib
+    matplotlib.use('Agg')
+except: pass
+`);
+      } catch(e) {}
+    }
+
+    // Capture stdout
+    py.runPython(`
+import sys, io
+_stdout_capture = io.StringIO()
+sys.stdout = _stdout_capture
+`);
+
+    try {
+      py.runPython(code);
+    } catch(e) {
+      py.runPython('sys.stdout = sys.__stdout__');
+      outEl.textContent = '❌ Lỗi: ' + e.message;
+      return;
+    }
+
+    const output = py.runPython('_stdout_capture.getvalue()').trim();
+    py.runPython('sys.stdout = sys.__stdout__');
+    outEl.textContent = output || '# (Không có output — dùng print() để xem kết quả)';
+
+    // Chạy test cases nếu có
+    if (testcases && testcases.length > 0 && tcResultId) {
+      const tcEl = document.getElementById(tcResultId);
+      if (tcEl) {
+        const results = [];
+        for (const tc of testcases) {
+          if (!tc.expected?.trim()) continue;
+          try {
+            py.runPython(`
+_stdout_capture = io.StringIO()
+sys.stdout = _stdout_capture
+`);
+            if (tc.input?.trim()) {
+              py.runPython(`
+import builtins as _bi
+_bi.input = lambda prompt='': ${JSON.stringify(tc.input)}
+`);
+            }
+            py.runPython(code);
+            const actual = py.runPython('_stdout_capture.getvalue()').trim();
+            py.runPython('sys.stdout = sys.__stdout__');
+            results.push({ input: tc.input||'', expected: tc.expected.trim(), actual, pass: actual === tc.expected.trim() });
+          } catch(e) {
+            py.runPython('sys.stdout = sys.__stdout__');
+            results.push({ input: tc.input||'', expected: tc.expected.trim(), actual: 'Lỗi: '+e.message.split('\n')[0], pass: false });
+          }
+        }
+        tcEl.innerHTML = renderTcResults(results);
+
+        // Lưu kết quả test case
+        const taskEl = document.getElementById(codeId);
+        if (taskEl) {
+          const sessionId = taskEl.getAttribute('data-session');
+          const taskId = taskEl.getAttribute('data-task');
+          if (sessionId && taskId) {
+            const existing = await db.getSubmission(sessionId, currentUser.username, taskId);
+            if (!existing?.submitted) {
+              const lines = code.split('\n').filter(l=>l.trim()&&!l.trim().startsWith('#')).length;
+              await db.setSubmission(sessionId, currentUser.username, taskId, {
+                ...(existing||{}), code, tcResults: results,
+                progress: Math.min(80, lines*15),
+                studentName: currentUser.name, studentId: currentUser.id
+              });
+            }
+          }
+        }
+      }
+    }
+  } catch(e) {
+    clearStatus();
+    outEl.textContent = '❌ Lỗi Pyodide: ' + e.message;
+  }
 }
 
 async function submitCode(sessionId, taskId, idx) {
