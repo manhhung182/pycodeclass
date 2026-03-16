@@ -194,30 +194,6 @@ body{font-family:var(--sans);background:var(--bg);color:var(--ink);min-height:10
 .no-session-title{font-size:18px;font-weight:700;margin-bottom:8px;}
 .no-session-sub{font-size:14px;color:var(--ink2);}
 
-/* TEST CASE */
-.testcase-wrap{margin:10px 0;}
-.testcase-row{display:flex;gap:8px;align-items:center;margin-bottom:8px;}
-.testcase-row input{flex:1;padding:7px 10px;background:var(--bg);border:1px solid var(--border);border-radius:var(--r);font-family:var(--mono);font-size:12px;color:var(--ink);outline:none;}
-.testcase-row input:focus{border-color:var(--accent);}
-.testcase-arrow{color:var(--ink3);font-size:14px;flex-shrink:0;}
-.testcase-del{background:none;border:none;color:var(--ink3);cursor:pointer;font-size:16px;padding:2px 4px;}
-.testcase-del:hover{color:var(--red);}
-.btn-add-tc{background:none;border:1px dashed var(--border2);border-radius:var(--r);padding:6px 12px;font-size:12px;font-weight:600;color:var(--ink3);cursor:pointer;width:100%;margin-top:4px;transition:all .15s;}
-.btn-add-tc:hover{border-color:var(--accent);color:var(--accent);}
-.tc-results{display:flex;flex-direction:column;gap:6px;margin:8px 0;}
-.tc-result-row{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:var(--r);font-size:13px;font-family:var(--mono);}
-.tc-result-row.pass{background:var(--green-l);border:1px solid rgba(22,163,74,.2);}
-.tc-result-row.fail{background:var(--red-l);border:1px solid rgba(220,38,38,.2);}
-.tc-result-icon{font-size:15px;flex-shrink:0;}
-.tc-result-info{flex:1;font-size:12px;line-height:1.6;}
-.tc-result-label{font-weight:700;color:var(--ink);font-size:11px;text-transform:uppercase;letter-spacing:.04em;}
-.pyodide-loading{display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--amber-l);border-radius:var(--r);font-size:12px;color:var(--amber);font-weight:600;margin:6px 0;}
-.pyodide-loading .spinner{width:14px;height:14px;border-width:2px;border-top-color:var(--amber);}
-.tc-score{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;font-size:13px;font-weight:700;margin:6px 0;}
-.tc-score.all-pass{background:var(--green-l);color:var(--green);}
-.tc-score.partial{background:var(--amber-l);color:var(--amber);}
-.tc-score.all-fail{background:var(--red-l);color:var(--red);}
-
 /* TOAST */
 .toast{position:fixed;bottom:24px;right:24px;background:var(--ink);color:white;padding:12px 18px;border-radius:var(--r);font-size:13px;font-weight:600;box-shadow:0 8px 32px rgba(0,0,0,.2);transform:translateY(80px);opacity:0;transition:all .3s;z-index:999;}
 .toast.show{transform:translateY(0);opacity:1;}
@@ -498,7 +474,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--ink);min-height:10
 <div class="modal-overlay" id="create-modal">
   <div class="modal">
     <div class="modal-header">
-      <div class="modal-title">Tạo buổi học mới</div>
+      <div class="modal-title" id="modal-title">Tạo buổi học mới</div>
       <button class="modal-close" onclick="closeModal()">✕</button>
     </div>
     <div class="modal-body">
@@ -579,7 +555,14 @@ const db = {
 
   async getSessions() {
     const rows = await this.query('sessions','GET',null,'?order=updated_at.desc');
-    return (rows||[]).map(r=>r.data);
+    const sessions = (rows||[]).map(r=>r.data);
+    // Sắp xếp: có ngày → tăng dần, không có ngày (Nháp chưa điền) → xuống cuối
+    return sessions.sort((a,b)=>{
+      if (!a.date && !b.date) return 0;
+      if (!a.date) return 1;
+      if (!b.date) return -1;
+      return a.date.localeCompare(b.date);
+    });
   },
   async upsertSession(session) {
     await this.query('sessions','POST',{ id:session.id, data:session },
@@ -591,6 +574,13 @@ const db = {
       body: JSON.stringify({ data: session, updated_at: new Date().toISOString() })
     });
   },
+  async deleteSession(id) {
+    await fetch(`${SUPABASE_URL}/rest/v1/sessions?id=eq.${id}`, {
+      method: 'DELETE',
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+    });
+  },
+
   async setSession(session) {
     // Try update first, then insert
     const patch = await fetch(`${SUPABASE_URL}/rest/v1/sessions?id=eq.${session.id}`, {
@@ -702,6 +692,7 @@ let currentUser = null;
 let newTasks = [];
 let monitorTimer = null;
 let configOK = false;
+let editingSessionId = null;  // null = tạo mới, có id = đang sửa
 
 // ════════════════════════════════════════════
 // BOOT
@@ -802,18 +793,36 @@ function renderSessionList(sessions) {
     el.innerHTML='<div class="no-session"><div class="no-session-icon">📚</div><div class="no-session-title">Chưa có buổi học nào</div><div class="no-session-sub">Nhấn "+ Tạo buổi học mới" để bắt đầu</div></div>';
     return;
   }
-  el.innerHTML = sessions.map(s=>`
-    <div class="session-card ${s.status==='live'?'live':''}" onclick="openMonitorFor('${s.id}')">
-      <div class="session-num" style="${s.status==='live'?'background:var(--green-l);color:var(--green)':''}">${s.date.slice(5)}</div>
+  el.innerHTML = sessions.map(s=>{
+    const isDraft = s.status==='draft';
+    const isLive  = s.status==='live';
+    const dateLabel = s.date ? s.date.slice(5) : '--';
+    const numStyle  = isLive  ? 'background:var(--green-l);color:var(--green)'
+                    : isDraft ? 'background:var(--amber-l);color:var(--amber)' : '';
+    const statusText = isLive ? '🟢 Đang học' : s.status==='done' ? 'Đã kết thúc' : '📝 Nháp';
+    const metaDate   = s.date ? fmtDate(s.date) : 'Chưa có ngày';
+    const actions = isLive
+      ? `<button onclick="event.stopPropagation();endSession('${s.id}')" style="font-size:11px;color:var(--ink3);background:none;border:none;cursor:pointer;padding:0">Kết thúc buổi</button>`
+      : isDraft
+      ? `<div style="display:flex;gap:6px" onclick="event.stopPropagation()">
+           <button class="btn-ghost" style="padding:5px 10px;font-size:12px" onclick="editSession('${s.id}')">✏️ Sửa</button>
+           <button class="btn-ghost" style="padding:5px 10px;font-size:12px;color:var(--red);border-color:rgba(220,38,38,.3)" onclick="deleteSession('${s.id}','${s.title.replace(/'/g,"\'")}')">🗑 Xóa</button>
+         </div>`
+      : '';
+    const clickHandler = isDraft ? '' : `onclick="openMonitorFor('${s.id}')"`;
+    return `
+    <div class="session-card ${isLive?'live':''}" ${clickHandler}>
+      <div class="session-num" style="${numStyle}">${dateLabel}</div>
       <div class="session-info">
         <div class="session-title">${s.title}</div>
-        <div class="session-meta">📅 ${fmtDate(s.date)} · ${s.tasks.length} bài tập${s.doc?` · 📎 ${s.doc}`:''}</div>
+        <div class="session-meta">📅 ${metaDate} · ${s.tasks.length} bài tập${s.doc?` · 📎 ${s.doc}`:''}</div>
       </div>
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px">
-        <span class="status-pill status-${s.status}">${s.status==='live'?'🟢 Đang học':s.status==='done'?'Đã kết thúc':'Nháp'}</span>
-        ${s.status==='live'?`<button onclick="event.stopPropagation();endSession('${s.id}')" style="font-size:11px;color:var(--ink3);background:none;border:none;cursor:pointer;padding:0">Kết thúc buổi</button>`:''}
+        <span class="status-pill status-${s.status}">${statusText}</span>
+        ${actions}
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 
 function populateSelects(sessions) {
@@ -831,6 +840,31 @@ async function endSession(id) {
   showToast('Buổi học đã kết thúc');
 }
 
+// ── Sửa buổi học (chỉ Nháp) ──
+async function editSession(id) {
+  const sessions = await db.getSessions();
+  const s = sessions.find(x=>x.id===id);
+  if (!s || s.status!=='draft') return;
+  // Điền dữ liệu cũ vào form
+  editingSessionId = id;
+  document.getElementById('new-title').value = s.title||'';
+  document.getElementById('new-date').value   = s.date||new Date().toISOString().slice(0,10);
+  document.getElementById('new-doc').value    = s.doc||'';
+  newTasks = (s.tasks||[]).map(t=>({...t}));
+  renderTaskBuilder();
+  document.getElementById('modal-title').textContent = '✏️ Sửa buổi học';
+  document.getElementById('create-modal').classList.add('open');
+}
+
+// ── Xóa buổi học (chỉ Nháp) ──
+async function deleteSession(id, title) {
+  if (!confirm(`Xóa buổi học "${title}"?
+Thao tác này không thể hoàn tác.`)) return;
+  await db.deleteSession(id);
+  await loadSessions();
+  showToast('🗑 Đã xóa buổi học', 'success');
+}
+
 function openMonitorFor(id) {
   document.getElementById('monitor-sel').value=id;
   teacherTab('monitor', document.querySelectorAll('.topnav-tabs .tab')[1]);
@@ -841,25 +875,18 @@ function openMonitorFor(id) {
 // CREATE SESSION MODAL
 // ════════════════════════════════════════════
 function openModal() {
+  editingSessionId = null;
   newTasks=[];
   document.getElementById('new-title').value='';
   document.getElementById('new-date').value=new Date().toISOString().slice(0,10);
   document.getElementById('new-doc').value='';
+  document.getElementById('modal-title').textContent = 'Tạo buổi học mới';
   addTask(); addTask();
   document.getElementById('create-modal').classList.add('open');
 }
 function closeModal() { document.getElementById('create-modal').classList.remove('open'); }
-function addTask() { newTasks.push({title:'',type:'code',desc:'',testcases:[]}); renderTaskBuilder(); }
+function addTask() { newTasks.push({title:'',type:'code',desc:''}); renderTaskBuilder(); }
 function removeTask(i) { newTasks.splice(i,1); renderTaskBuilder(); }
-function addTestcase(taskIdx) {
-  if (!newTasks[taskIdx].testcases) newTasks[taskIdx].testcases=[];
-  newTasks[taskIdx].testcases.push({input:'',expected:''});
-  renderTaskBuilder();
-}
-function removeTestcase(taskIdx, tcIdx) {
-  newTasks[taskIdx].testcases.splice(tcIdx,1);
-  renderTaskBuilder();
-}
 function renderTaskBuilder() {
   document.getElementById('task-builder').innerHTML = newTasks.map((t,i)=>`
     <div class="task-item">
@@ -867,26 +894,12 @@ function renderTaskBuilder() {
       <div class="task-item-body">
         <div style="display:flex;gap:8px;margin-bottom:8px">
           <input class="form-input" style="flex:1" placeholder="Tên bài tập" value="${t.title}" oninput="newTasks[${i}].title=this.value"/>
-          <select class="form-input" style="width:130px" onchange="newTasks[${i}].type=this.value; if(this.value==='upload') newTasks[${i}].testcases=[]; renderTaskBuilder()">
+          <select class="form-input" style="width:130px" onchange="newTasks[${i}].type=this.value">
             <option value="code" ${t.type==='code'?'selected':''}>💻 Viết code</option>
             <option value="upload" ${t.type==='upload'?'selected':''}>📎 Upload file</option>
           </select>
         </div>
         <textarea class="form-input" style="height:60px;resize:none;font-size:13px" placeholder="Mô tả yêu cầu..." oninput="newTasks[${i}].desc=this.value">${t.desc}</textarea>
-        ${t.type==='code' ? `
-        <div style="margin-top:8px">
-          <div style="font-size:11px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px">Test cases (tuỳ chọn)</div>
-          <div class="testcase-wrap" id="tc-wrap-${i}">
-            ${(t.testcases||[]).map((tc,j)=>`
-              <div class="testcase-row" id="tc-${i}-${j}">
-                <input placeholder="Input (VD: 10)" value="${tc.input||''}" oninput="newTasks[${i}].testcases[${j}].input=this.value"/>
-                <span class="testcase-arrow">→</span>
-                <input placeholder="Expected output (VD: 55)" value="${tc.expected||''}" oninput="newTasks[${i}].testcases[${j}].expected=this.value"/>
-                <button class="testcase-del" onclick="removeTestcase(${i},${j})">×</button>
-              </div>`).join('')}
-          </div>
-          <button class="btn-add-tc" onclick="addTestcase(${i})">+ Thêm test case</button>
-        </div>` : ''}
       </div>
       <button onclick="removeTask(${i})" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:18px;padding:4px;align-self:flex-start">×</button>
     </div>`).join('');
@@ -899,11 +912,25 @@ async function saveSession(status) {
   if (!title){ showToast('Nhập tên buổi học!','error'); return; }
   if (!newTasks.length){ showToast('Thêm ít nhất 1 bài tập!','error'); return; }
   if (newTasks.some(t=>!t.title.trim())){ showToast('Điền tên cho tất cả bài tập!','error'); return; }
-  const session = { id:'sess_'+Date.now(), title, date, status, doc, tasks:newTasks.map((t,i)=>({id:`t${i+1}`,...t})), createdAt:Date.now() };
-  await db.setSession(session);
-  closeModal();
-  await loadSessions();
-  showToast(status==='live'?'🚀 Buổi học đã phát hành!':'💾 Đã lưu nháp!','success');
+  if (editingSessionId) {
+    // Đang sửa buổi Nháp
+    const sessions = await db.getSessions();
+    const existing = sessions.find(s=>s.id===editingSessionId);
+    if (!existing) { showToast('Không tìm thấy buổi học!','error'); return; }
+    const session = { ...existing, title, date, status, doc, tasks:newTasks.map((t,i)=>({id:`t${i+1}`,...t})) };
+    await db.setSession(session);
+    editingSessionId = null;
+    closeModal();
+    await loadSessions();
+    showToast(status==='live'?'🚀 Buổi học đã phát hành!':'💾 Đã cập nhật nháp!','success');
+  } else {
+    // Tạo mới
+    const session = { id:'sess_'+Date.now(), title, date, status, doc, tasks:newTasks.map((t,i)=>({id:`t${i+1}`,...t})), createdAt:Date.now() };
+    await db.setSession(session);
+    closeModal();
+    await loadSessions();
+    showToast(status==='live'?'🚀 Buổi học đã phát hành!':'💾 Đã lưu nháp!','success');
+  }
 }
 
 // ════════════════════════════════════════════
@@ -1118,45 +1145,24 @@ async function renderStudentTasks() {
 function renderCodeTask(task,i,sub,sessionId) {
   const code=sub?.code||`# Bài ${i+1}: ${task.title}\n# Viết code của bạn ở đây\n\n`;
   const isDone=sub?.submitted;
-  const hasTC = task.testcases && task.testcases.filter(tc=>tc.expected?.trim()).length>0;
-  const tcResultsHtml = sub?.tcResults ? renderTcResults(sub.tcResults) : '';
   return `
     <div class="code-wrap">
       <div class="code-toolbar">
         <span class="code-lang">python</span>
-        <div style="margin-left:auto;display:flex;gap:6px">
-          <button class="btn-ghost" style="padding:5px 12px;font-size:12px" onclick="runCodePyodide('code-${i}','out-${i}','tc-results-${i}',${JSON.stringify(hasTC ? task.testcases.filter(tc=>tc.expected?.trim()) : []).replace(/"/g,'&quot;')})">▶ Chạy thử</button>
+        <div style="margin-left:auto">
+          <button class="btn-ghost" style="padding:5px 12px;font-size:12px" onclick="runCode('code-${i}','out-${i}')">▶ Chạy thử</button>
         </div>
       </div>
       <textarea class="code-textarea" id="code-${i}" ${isDone?'readonly':''}
-        data-session="${sessionId}" data-task="${task.id}"
         oninput="autoSave('${sessionId}','${task.id}',this.value)">${code}</textarea>
     </div>
-    <div id="pyodide-status-${i}"></div>
     <div class="output-box" id="out-${i}">${sub?.lastOutput||'# Output hiển thị ở đây...'}</div>
-    ${hasTC ? `<div id="tc-results-${i}" class="tc-results">${tcResultsHtml}</div>` : ''}
     <div class="submit-row">
       ${isDone
         ? `<button class="btn-action green" style="cursor:default">✅ Đã nộp · ${new Date(sub.submittedAt).toLocaleTimeString('vi-VN')}</button>`
         : `<button class="btn-action green" onclick="submitCode('${sessionId}','${task.id}',${i})">📤 Nộp bài</button>
            <span class="submit-note">Code tự lưu khi bạn gõ</span>`}
     </div>`;
-}
-
-function renderTcResults(tcResults) {
-  if (!tcResults || !tcResults.length) return '';
-  const pass = tcResults.filter(r=>r.pass).length;
-  const total = tcResults.length;
-  const scoreClass = pass===total?'all-pass':pass>0?'partial':'all-fail';
-  const rows = tcResults.map(r=>`
-    <div class="tc-result-row ${r.pass?'pass':'fail'}">
-      <span class="tc-result-icon">${r.pass?'✅':'❌'}</span>
-      <div class="tc-result-info">
-        <div class="tc-result-label">${r.pass?'Đúng':'Sai'}</div>
-        ${r.input!==undefined&&r.input!==''?`Input: <strong>${r.input}</strong> · `:''}Expected: <strong>${r.expected}</strong>${!r.pass?` · Got: <strong>${r.actual||'(no output)'}</strong>`:''}
-      </div>
-    </div>`).join('');
-  return `<div class="tc-score ${scoreClass}">🎯 ${pass}/${total} test case đúng</div>${rows}`;
 }
 
 function renderUploadTask(task,i,sub,sessionId) {
@@ -1194,128 +1200,12 @@ function autoSave(sessionId, taskId, code) {
   }, 2000);
 }
 
-// ════════════════════════════════════════════
-// PYODIDE RUNNER
-// ════════════════════════════════════════════
-let pyodideInstance = null;
-let pyodideLoading = false;
-let pyodideCallbacks = [];
-
-async function loadPyodideOnce() {
-  if (pyodideInstance) return pyodideInstance;
-  if (pyodideLoading) {
-    return new Promise(resolve => pyodideCallbacks.push(resolve));
-  }
-  pyodideLoading = true;
-  if (!document.getElementById('pyodide-script')) {
-    const s = document.createElement('script');
-    s.id = 'pyodide-script';
-    s.src = 'https://cdn.jsdelivr.net/pyodide/v0.25.1/full/pyodide.js';
-    document.head.appendChild(s);
-    await new Promise(r => s.onload = r);
-  }
-  pyodideInstance = await loadPyodide({ indexURL: 'https://cdn.jsdelivr.net/pyodide/v0.25.1/full/' });
-  pyodideLoading = false;
-  pyodideCallbacks.forEach(r => r(pyodideInstance));
-  pyodideCallbacks = [];
-  return pyodideInstance;
-}
-
-async function runCodePyodide(codeId, outId, tcResultId, testcases) {
-  const code = document.getElementById(codeId)?.value || '';
-  const outEl = document.getElementById(outId);
-  const statusEl = document.getElementById(codeId.replace('code-','pyodide-status-'));
-  if (!outEl) return;
-
-  // Show loading indicator
-  if (statusEl) {
-    statusEl.innerHTML = `<div class="pyodide-loading"><div class="spinner"></div>Đang tải Python runtime lần đầu (~5 giây)...</div>`;
-  }
-  outEl.textContent = '# Đang chạy...';
-
-  try {
-    const py = await loadPyodideOnce();
-    if (statusEl) statusEl.innerHTML = '';
-
-    // Capture stdout
-    py.runPython(`
-import sys, io
-_stdout_capture = io.StringIO()
-sys.stdout = _stdout_capture
-`);
-    try {
-      py.runPython(code);
-    } catch(e) {
-      py.runPython('sys.stdout = sys.__stdout__');
-      outEl.textContent = '❌ Lỗi: ' + e.message;
-      return;
-    }
-    const output = py.runPython('_stdout_capture.getvalue()').trim();
-    py.runPython('sys.stdout = sys.__stdout__');
-    outEl.textContent = output || '# (Không có output — dùng print() để xem kết quả)';
-
-    // Run test cases if any
-    if (testcases && testcases.length > 0 && tcResultId) {
-      const tcEl = document.getElementById(tcResultId);
-      if (tcEl) {
-        const results = [];
-        for (const tc of testcases) {
-          if (!tc.expected?.trim()) continue;
-          try {
-            py.runPython(`
-_stdout_capture = io.StringIO()
-sys.stdout = _stdout_capture
-`);
-            // Inject input if provided
-            const codeWithInput = tc.input?.trim()
-              ? code + `\n\n# Test runner\n_test_input = ${JSON.stringify(tc.input)}\nif "_test_input" not in dir(): pass`
-              : code;
-
-            // Run with input injection via builtins override if needed
-            // Build code with mocked input
-            let codeToRun = code;
-            if (tc.input?.trim()) {
-              const inputVal = JSON.stringify(tc.input);
-              codeToRun = `import builtins as _bi
-_bi.input = lambda prompt='': ${inputVal}
-` + code;
-            }
-            py.runPython(codeToRun);
-            const actual = py.runPython('_stdout_capture.getvalue()').trim();
-            py.runPython('sys.stdout = sys.__stdout__');
-            const pass_ = actual === tc.expected.trim();
-            results.push({ input: tc.input||'', expected: tc.expected.trim(), actual, pass: pass_ });
-          } catch(e) {
-            py.runPython('sys.stdout = sys.__stdout__');
-            results.push({ input: tc.input||'', expected: tc.expected.trim(), actual: 'Lỗi: '+e.message.split('\n')[0], pass: false });
-          }
-        }
-        tcEl.innerHTML = renderTcResults(results);
-
-        // Save tc results to Supabase via autoSave
-        const taskEl = document.getElementById(codeId);
-        if (taskEl) {
-          const idx = codeId.replace('code-','');
-          const sessionId = taskEl.getAttribute('data-session');
-          const taskId = taskEl.getAttribute('data-task');
-          if (sessionId && taskId) {
-            const existing = await db.getSubmission(sessionId, currentUser.username, taskId);
-            if (!existing?.submitted) {
-              const lines = code.split('\n').filter(l=>l.trim()&&!l.startsWith('#')).length;
-              await db.setSubmission(sessionId, currentUser.username, taskId, {
-                ...(existing||{}), code, tcResults: results,
-                progress: Math.min(80, lines*15),
-                studentName: currentUser.name, studentId: currentUser.id
-              });
-            }
-          }
-        }
-      }
-    }
-  } catch(e) {
-    if (statusEl) statusEl.innerHTML = '';
-    outEl.textContent = '❌ Không thể tải Pyodide: ' + e.message;
-  }
+function runCode(codeId, outId) {
+  const code=document.getElementById(codeId)?.value||'';
+  const el=document.getElementById(outId); if(!el) return;
+  const prints=code.split('\n').filter(l=>l.trim().startsWith('print('))
+    .map(l=>{ const m=l.match(/print\((.+)\)/); return m?'→ '+m[1].replace(/^['"]|['"]$/g,''):''; });
+  el.textContent=prints.length?prints.join('\n'):'# Không có output (dùng print() để xem kết quả)';
 }
 
 async function submitCode(sessionId, taskId, idx) {
@@ -1323,9 +1213,7 @@ async function submitCode(sessionId, taskId, idx) {
   if (!code || code.split('\n').filter(l=>l.trim()&&!l.startsWith('#')).length<2) {
     showToast('Hãy viết code trước khi nộp!','error'); return;
   }
-  const existing = await db.getSubmission(sessionId, currentUser.username, taskId);
   await db.setSubmission(sessionId, currentUser.username, taskId, {
-    ...(existing||{}),
     code, submitted:true, submittedAt:Date.now(), progress:100,
     studentName:currentUser.name, studentId:currentUser.id,
     lastOutput:document.getElementById(`out-${idx}`)?.textContent||''
