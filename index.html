@@ -779,48 +779,52 @@ function setRole(role) {
 
 // HÀM doLogin MỚI (Gemini)
 async function doLogin() {
-    const email = document.getElementById('login-id').value; // ID lúc này phải là Email
-    const password = document.getElementById('login-pw').value;
-    const errorEl = document.getElementById('login-error');
+  const id = document.getElementById('login-id').value.trim();
+  const pw = document.getElementById('login-pw').value.trim();
+  const errorEl = document.getElementById('login-error');
+  
+  if (!id || !pw) {
+    errorEl.innerText = "Vui lòng nhập đầy đủ thông tin!";
+    errorEl.style.display = 'block';
+    return;
+  }
 
-    // 1. Hiện trạng thái chờ
-    const btn = document.querySelector('.login-btn');
-    const originalText = btn.textContent;
-    btn.textContent = '⌛ Đang đăng nhập...';
-    btn.disabled = true;
-    errorEl.style.display = 'none';
+  errorEl.style.display = 'none';
 
-    try {
-        // 2. Gọi lệnh đăng nhập của Supabase
-        // Lưu ý: Biến 'supabase' phải được khởi tạo ở đầu file (thường bạn đã có rồi)
-        const { data, error } = await supabase.auth.signInWithPassword({
-            email: email,
-            password: password,
-        });
-
-        if (error) throw error;
-
-        // 3. Nếu đăng nhập thành công
-        showToast('Đăng nhập thành công!', 'success');
-        
-        // Kiểm tra xem user là Giáo viên hay Học sinh để chuyển màn hình phù hợp
-        // Ví dụ: Nếu email chứa 'admin' thì vào màn giáo viên, ngược lại vào học sinh
-        if (email.includes('admin') || email.includes('gv_')) {
-            showScreen('screen-teacher');
-        } else {
-            showScreen('screen-student');
-            loadStudentData(data.user.email); // Hàm load dữ liệu học sinh của bạn
-        }
-
-    } catch (error) {
-        // 4. Xử lý lỗi
-        errorEl.innerText = 'Lỗi: ' + error.message;
-        errorEl.style.display = 'block';
-        showToast('Đăng nhập thất bại', 'error');
-    } finally {
-        btn.textContent = originalText;
-        btn.disabled = false;
+  try {
+    // 1. Kiểm tra nếu là Giáo viên (Logic cố định như cũ của bạn)
+    if (id === 'gv_nguyenvan' && pw === '123456') {
+      showScreen('screen-teacher');
+      return;
     }
+
+    // 2. Kiểm tra Sinh viên từ bảng 'students' trên Supabase
+    const { data, error } = await supabase
+      .from('students')
+      .select('*')
+      .eq('username', id) // Tìm dòng có username khớp
+      .single();
+
+    if (error || !data) {
+      throw new Error("Tài khoản không tồn tại hoặc lỗi kết nối!");
+    }
+
+    // 3. So khớp mật khẩu
+    if (data.password === pw) {
+      currentUser = data;
+      document.getElementById('student-name-chip').innerText = data.full_name || data.name || data.username;
+      showScreen('screen-student');
+      // Gọi hàm load dữ liệu sinh viên nếu bạn có
+      if (typeof loadStudentSessions === 'function') loadStudentSessions();
+    } else {
+      throw new Error("Mật khẩu không chính xác!");
+    }
+
+  } catch (err) {
+    console.error("Login Error:", err);
+    errorEl.innerText = err.message;
+    errorEl.style.display = 'block';
+  }
 }
 
 function doLogout() {
