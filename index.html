@@ -777,30 +777,50 @@ function setRole(role) {
   document.getElementById('login-id').placeholder = role==='teacher'?'VD: gv_nguyenvan':'VD: sv001';
 }
 
+// HÀM doLogin MỚI (Gemini)
 async function doLogin() {
-  const id = document.getElementById('login-id').value.trim().toLowerCase();
-  const pw = document.getElementById('login-pw').value;
-  const err = document.getElementById('login-error');
-  const accts = ACCOUNTS[currentRole];
-  if (!accts[id] || accts[id].pw !== pw) { err.style.display='block'; return; }
-  err.style.display='none';
-  currentUser = { ...accts[id], username:id, role:currentRole };
+    const email = document.getElementById('login-id').value; // ID lúc này phải là Email
+    const password = document.getElementById('login-pw').value;
+    const errorEl = document.getElementById('login-error');
 
-  document.getElementById('screen-login').classList.remove('active');
-  if (currentRole==='teacher') {
-    document.getElementById('screen-teacher').classList.add('active');
-    document.getElementById('teacher-name-chip').textContent = currentUser.name;
-    await loadSessions();
-    startMonitorRefresh();
-  } else {
-    document.getElementById('screen-student').classList.add('active');
-    const ini = currentUser.name.split(' ').slice(-2).map(w=>w[0]).join('').toUpperCase();
-    document.getElementById('sv-avatar').textContent = ini;
-    document.getElementById('sv-avatar').style.background = currentUser.color;
-    document.getElementById('sv-name-chip').textContent = `${currentUser.name} · ${currentUser.id}`;
-    await renderStudentTasks();
-    startHeartbeat();
-  }
+    // 1. Hiện trạng thái chờ
+    const btn = document.querySelector('.login-btn');
+    const originalText = btn.textContent;
+    btn.textContent = '⌛ Đang đăng nhập...';
+    btn.disabled = true;
+    errorEl.style.display = 'none';
+
+    try {
+        // 2. Gọi lệnh đăng nhập của Supabase
+        // Lưu ý: Biến 'supabase' phải được khởi tạo ở đầu file (thường bạn đã có rồi)
+        const { data, error } = await supabase.auth.signInWithPassword({
+            email: email,
+            password: password,
+        });
+
+        if (error) throw error;
+
+        // 3. Nếu đăng nhập thành công
+        showToast('Đăng nhập thành công!', 'success');
+        
+        // Kiểm tra xem user là Giáo viên hay Học sinh để chuyển màn hình phù hợp
+        // Ví dụ: Nếu email chứa 'admin' thì vào màn giáo viên, ngược lại vào học sinh
+        if (email.includes('admin') || email.includes('gv_')) {
+            showScreen('screen-teacher');
+        } else {
+            showScreen('screen-student');
+            loadStudentData(data.user.email); // Hàm load dữ liệu học sinh của bạn
+        }
+
+    } catch (error) {
+        // 4. Xử lý lỗi
+        errorEl.innerText = 'Lỗi: ' + error.message;
+        errorEl.style.display = 'block';
+        showToast('Đăng nhập thất bại', 'error');
+    } finally {
+        btn.textContent = originalText;
+        btn.disabled = false;
+    }
 }
 
 function doLogout() {
