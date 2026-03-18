@@ -777,53 +777,29 @@ function setRole(role) {
   document.getElementById('login-id').placeholder = role==='teacher'?'VD: gv_nguyenvan':'VD: sv001';
 }
 
-// HÀM doLogin MỚI (Gemini)
 async function doLogin() {
-  const id = document.getElementById('login-id').value.trim();
-  const pw = document.getElementById('login-pw').value.trim();
-  const errorEl = document.getElementById('login-error');
-  
-  if (!id || !pw) {
-    errorEl.innerText = "Vui lòng nhập đầy đủ thông tin!";
-    errorEl.style.display = 'block';
-    return;
-  }
+  const id = document.getElementById('login-id').value.trim().toLowerCase();
+  const pw = document.getElementById('login-pw').value;
+  const err = document.getElementById('login-error');
+  const accts = ACCOUNTS[currentRole];
+  if (!accts[id] || accts[id].pw !== pw) { err.style.display='block'; return; }
+  err.style.display='none';
+  currentUser = { ...accts[id], username:id, role:currentRole };
 
-  errorEl.style.display = 'none';
-
-  try {
-    // 1. Kiểm tra nếu là Giáo viên (Logic cố định như cũ của bạn)
-    if (id === 'gv_nguyenvan' && pw === '123456') {
-      showScreen('screen-teacher');
-      return;
-    }
-
-    // 2. Kiểm tra Sinh viên từ bảng 'students' trên Supabase
-    const { data, error } = await supabase
-      .from('students')
-      .select('*')
-      .eq('username', id) // Tìm dòng có username khớp
-      .single();
-
-    if (error || !data) {
-      throw new Error("Tài khoản không tồn tại hoặc lỗi kết nối!");
-    }
-
-    // 3. So khớp mật khẩu
-    if (data.password === pw) {
-      currentUser = data;
-      document.getElementById('student-name-chip').innerText = data.full_name || data.name || data.username;
-      showScreen('screen-student');
-      // Gọi hàm load dữ liệu sinh viên nếu bạn có
-      if (typeof loadStudentSessions === 'function') loadStudentSessions();
-    } else {
-      throw new Error("Mật khẩu không chính xác!");
-    }
-
-  } catch (err) {
-    console.error("Login Error:", err);
-    errorEl.innerText = err.message;
-    errorEl.style.display = 'block';
+  document.getElementById('screen-login').classList.remove('active');
+  if (currentRole==='teacher') {
+    document.getElementById('screen-teacher').classList.add('active');
+    document.getElementById('teacher-name-chip').textContent = currentUser.name;
+    await loadSessions();
+    startMonitorRefresh();
+  } else {
+    document.getElementById('screen-student').classList.add('active');
+    const ini = currentUser.name.split(' ').slice(-2).map(w=>w[0]).join('').toUpperCase();
+    document.getElementById('sv-avatar').textContent = ini;
+    document.getElementById('sv-avatar').style.background = currentUser.color;
+    document.getElementById('sv-name-chip').textContent = `${currentUser.name} · ${currentUser.id}`;
+    await renderStudentTasks();
+    startHeartbeat();
   }
 }
 
