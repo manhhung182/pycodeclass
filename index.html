@@ -747,6 +747,12 @@ async function boot() {
   try {
     document.getElementById('loading-text').textContent = 'Đang kết nối Supabase...';
     await db.getSessions();
+    // Load danh sách SV từ Supabase để đăng nhập được
+    document.getElementById('loading-text').textContent = 'Đang tải danh sách sinh viên...';
+    try {
+      allStudents = await db.getStudents();
+      syncStudentsToAccounts();
+    } catch(e) { /* Bỏ qua nếu chưa có bảng students */ }
     configOK = true;
     document.getElementById('screen-loading').classList.remove('active');
     document.getElementById('screen-login').classList.add('active');
