@@ -1,4 +1,4 @@
-<!DOCTYPE html> 
+<!DOCTYPE html>
 <html lang="vi">
 <head>
 <meta charset="UTF-8">
@@ -156,6 +156,14 @@ body{font-family:var(--sans);background:var(--bg);color:var(--ink);min-height:10
 .modal-footer{padding:16px 24px;border-top:1px solid var(--border);display:flex;gap:10px;justify-content:flex-end;}
 .task-builder{display:flex;flex-direction:column;gap:10px;margin-top:12px;}
 .task-item{background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px;display:flex;align-items:flex-start;gap:10px;}
+.testcase-row{display:flex;gap:8px;align-items:center;margin-bottom:6px;}
+.testcase-row input{flex:1;padding:6px 10px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);font-family:var(--mono);font-size:12px;color:var(--ink);outline:none;}
+.testcase-row input:focus{border-color:var(--accent);}
+.testcase-arrow{color:var(--ink3);font-size:13px;flex-shrink:0;}
+.testcase-del{background:none;border:none;color:var(--ink3);cursor:pointer;font-size:15px;padding:2px 4px;line-height:1;}
+.testcase-del:hover{color:var(--red);}
+.btn-add-tc{background:none;border:1px dashed var(--border2);border-radius:var(--r);padding:5px 10px;font-size:12px;font-weight:600;color:var(--ink3);cursor:pointer;width:100%;margin-top:4px;transition:all .15s;}
+.btn-add-tc:hover{border-color:var(--accent);color:var(--accent);}
 .task-item-body{flex:1;}
 
 /* STUDENT */
@@ -178,7 +186,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--ink);min-height:10
 .tc-type.upload{background:var(--accent-l);color:var(--accent);}
 .tc-body{display:none;padding:18px;border-top:1px solid var(--border);}
 .tc-body.open{display:block;}
-.task-desc{background:var(--bg);border-radius:var(--r);padding:14px;font-size:13px;line-height:1.7;color:var(--ink2);margin-bottom:16px;border-left:3px solid var(--accent);}
+.task-desc{background:var(--bg);border-radius:var(--r);padding:14px;font-size:13px;line-height:1.7;color:var(--ink2);margin-bottom:16px;border-left:3px solid var(--accent);white-space:pre-wrap;}
 .code-wrap{border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:12px;}
 .code-toolbar{background:var(--bg2);padding:8px 12px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--border);}
 .code-lang{font-family:var(--mono);font-size:11px;color:var(--ink3);}
@@ -716,6 +724,12 @@ const db = {
       method: 'DELETE',
       headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
     });
+  },
+  async deleteSession(id) {
+    await fetch(`${SUPABASE_URL}/rest/v1/sessions?id=eq.${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+    });
   }
 };
 
@@ -725,6 +739,7 @@ const db = {
 let currentRole = 'teacher';
 let currentUser = null;
 let newTasks = [];
+let editingSessionId = null;
 let monitorTimer = null;
 let configOK = false;
 
@@ -833,18 +848,32 @@ function renderSessionList(sessions) {
     el.innerHTML='<div class="no-session"><div class="no-session-icon">📚</div><div class="no-session-title">Chưa có buổi học nào</div><div class="no-session-sub">Nhấn "+ Tạo buổi học mới" để bắt đầu</div></div>';
     return;
   }
-  el.innerHTML = sessions.map(s=>`
-    <div class="session-card ${s.status==='live'?'live':''}" onclick="openMonitorFor('${s.id}')">
-      <div class="session-num" style="${s.status==='live'?'background:var(--green-l);color:var(--green)':''}">${s.date.slice(5)}</div>
+  el.innerHTML = sessions.map(s=>{
+    const isDraft = s.status==='draft';
+    const isLive  = s.status==='live';
+    const dateLabel = s.date ? s.date.slice(5) : '--';
+    const numStyle = isLive ? 'background:var(--green-l);color:var(--green)' : isDraft ? 'background:var(--amber-l);color:var(--amber)' : '';
+    const statusText = isLive ? '🟢 Đang học' : s.status==='done' ? 'Đã kết thúc' : '📝 Nháp';
+    const clickHandler = isDraft ? '' : `onclick="openMonitorFor('${s.id}')"`;
+    const actions = isLive
+      ? `<button onclick="event.stopPropagation();endSession('${s.id}')" style="font-size:11px;color:var(--ink3);background:none;border:none;cursor:pointer;padding:0">Kết thúc buổi</button>`
+      : isDraft
+      ? `<div style="display:flex;gap:6px" onclick="event.stopPropagation()">
+           <button class="btn-ghost" style="padding:4px 10px;font-size:12px" onclick="editSession('${s.id}')">✏️ Sửa</button>
+           <button class="btn-ghost" style="padding:4px 10px;font-size:12px;color:var(--red);border-color:rgba(220,38,38,.3)" onclick="deleteSessionUI('${s.id}','${s.title.replace(/'/g,"\\'")}')">🗑 Xóa</button>
+         </div>` : '';
+    return `<div class="session-card ${isLive?'live':''}" ${clickHandler}>
+      <div class="session-num" style="${numStyle}">${dateLabel}</div>
       <div class="session-info">
         <div class="session-title">${s.title}</div>
-        <div class="session-meta">📅 ${fmtDate(s.date)} · ${s.tasks.length} bài tập${s.doc?` · 📎 ${s.doc}`:''}</div>
+        <div class="session-meta">📅 ${s.date?fmtDate(s.date):'Chưa có ngày'} · ${s.tasks.length} bài tập${s.doc?` · 📎 ${s.doc}`:''}</div>
       </div>
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px">
-        <span class="status-pill status-${s.status}">${s.status==='live'?'🟢 Đang học':s.status==='done'?'Đã kết thúc':'Nháp'}</span>
-        ${s.status==='live'?`<button onclick="event.stopPropagation();endSession('${s.id}')" style="font-size:11px;color:var(--ink3);background:none;border:none;cursor:pointer;padding:0">Kết thúc buổi</button>`:''}
+        <span class="status-pill status-${s.status}">${statusText}</span>
+        ${actions}
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 
 function populateSelects(sessions) {
@@ -869,6 +898,27 @@ async function endSession(id) {
   showToast('Buổi học đã kết thúc');
 }
 
+async function editSession(id) {
+  const sessions = await db.getSessions();
+  const s = sessions.find(x=>x.id===id);
+  if (!s || s.status!=='draft') return;
+  editingSessionId = id;
+  document.getElementById('new-title').value = s.title||'';
+  document.getElementById('new-date').value   = s.date||new Date().toISOString().slice(0,10);
+  document.getElementById('new-doc').value    = s.doc||'';
+  document.getElementById('create-modal-title').textContent = '✏️ Sửa buổi học';
+  newTasks = (s.tasks||[]).map(t=>({...t, testcases: t.testcases||[]}));
+  renderTaskBuilder();
+  document.getElementById('create-modal').classList.add('open');
+}
+
+async function deleteSessionUI(id, title) {
+  if (!confirm(`Xóa buổi học "${title}"?\nThao tác này không thể hoàn tác.`)) return;
+  await db.deleteSession(id);
+  await loadSessions();
+  showToast('🗑 Đã xóa buổi học','success');
+}
+
 function openMonitorFor(id) {
   document.getElementById('monitor-sel').value=id;
   teacherTab('monitor', document.querySelectorAll('.topnav-tabs .tab')[1]);
@@ -879,16 +929,24 @@ function openMonitorFor(id) {
 // CREATE SESSION MODAL
 // ════════════════════════════════════════════
 function openModal() {
+  editingSessionId = null;
   newTasks=[];
   document.getElementById('new-title').value='';
   document.getElementById('new-date').value=new Date().toISOString().slice(0,10);
   document.getElementById('new-doc').value='';
+  document.getElementById('create-modal-title').textContent = 'Tạo buổi học mới';
   addTask(); addTask();
   document.getElementById('create-modal').classList.add('open');
 }
 function closeModal() { document.getElementById('create-modal').classList.remove('open'); }
-function addTask() { newTasks.push({title:'',type:'code',desc:''}); renderTaskBuilder(); }
+function addTask() { newTasks.push({title:'',type:'code',desc:'',testcases:[]}); renderTaskBuilder(); }
 function removeTask(i) { newTasks.splice(i,1); renderTaskBuilder(); }
+function addTestcase(i) {
+  if (!newTasks[i].testcases) newTasks[i].testcases=[];
+  newTasks[i].testcases.push({input:'',expected:''});
+  renderTaskBuilder();
+}
+function removeTestcase(i,j) { newTasks[i].testcases.splice(j,1); renderTaskBuilder(); }
 function renderTaskBuilder() {
   document.getElementById('task-builder').innerHTML = newTasks.map((t,i)=>`
     <div class="task-item">
@@ -896,12 +954,24 @@ function renderTaskBuilder() {
       <div class="task-item-body">
         <div style="display:flex;gap:8px;margin-bottom:8px">
           <input class="form-input" style="flex:1" placeholder="Tên bài tập" value="${t.title}" oninput="newTasks[${i}].title=this.value"/>
-          <select class="form-input" style="width:130px" onchange="newTasks[${i}].type=this.value">
+          <select class="form-input" style="width:130px" onchange="newTasks[${i}].type=this.value; if(this.value==='upload'){newTasks[${i}].testcases=[];} renderTaskBuilder()">
             <option value="code" ${t.type==='code'?'selected':''}>💻 Viết code</option>
             <option value="upload" ${t.type==='upload'?'selected':''}>📎 Upload file</option>
           </select>
         </div>
         <textarea class="form-input" style="height:60px;resize:none;font-size:13px" placeholder="Mô tả yêu cầu..." oninput="newTasks[${i}].desc=this.value">${t.desc}</textarea>
+        ${t.type==='code'?`
+        <div style="margin-top:8px">
+          <div style="font-size:11px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:5px">Test cases (tuỳ chọn)</div>
+          ${(t.testcases||[]).map((tc,j)=>`
+            <div class="testcase-row">
+              <input placeholder="Input (VD: 10)" value="${tc.input||''}" oninput="newTasks[${i}].testcases[${j}].input=this.value"/>
+              <span class="testcase-arrow">→</span>
+              <input placeholder="Expected output (VD: 55)" value="${tc.expected||''}" oninput="newTasks[${i}].testcases[${j}].expected=this.value"/>
+              <button class="testcase-del" onclick="removeTestcase(${i},${j})">×</button>
+            </div>`).join('')}
+          <button class="btn-add-tc" onclick="addTestcase(${i})">+ Thêm test case</button>
+        </div>`:''}
       </div>
       <button onclick="removeTask(${i})" style="background:none;border:none;color:var(--ink3);cursor:pointer;font-size:18px;padding:4px;align-self:flex-start">×</button>
     </div>`).join('');
@@ -914,11 +984,24 @@ async function saveSession(status) {
   if (!title){ showToast('Nhập tên buổi học!','error'); return; }
   if (!newTasks.length){ showToast('Thêm ít nhất 1 bài tập!','error'); return; }
   if (newTasks.some(t=>!t.title.trim())){ showToast('Điền tên cho tất cả bài tập!','error'); return; }
-  const session = { id:'sess_'+Date.now(), title, date, status, doc, tasks:newTasks.map((t,i)=>({id:`t${i+1}`,...t})), createdAt:Date.now() };
-  await db.setSession(session);
-  closeModal();
-  await loadSessions();
-  showToast(status==='live'?'🚀 Buổi học đã phát hành!':'💾 Đã lưu nháp!','success');
+  if (editingSessionId) {
+    // Sửa buổi Nháp
+    const sessions = await db.getSessions();
+    const existing = sessions.find(s=>s.id===editingSessionId);
+    if (!existing){ showToast('Không tìm thấy buổi học!','error'); return; }
+    const session = { ...existing, title, date, status, doc, tasks:newTasks.map((t,i)=>({id:`t${i+1}`,...t})) };
+    await db.setSession(session);
+    editingSessionId = null;
+    closeModal();
+    await loadSessions();
+    showToast(status==='live'?'🚀 Buổi học đã phát hành!':'💾 Đã cập nhật nháp!','success');
+  } else {
+    const session = { id:'sess_'+Date.now(), title, date, status, doc, tasks:newTasks.map((t,i)=>({id:`t${i+1}`,...t})), createdAt:Date.now() };
+    await db.setSession(session);
+    closeModal();
+    await loadSessions();
+    showToast(status==='live'?'🚀 Buổi học đã phát hành!':'💾 Đã lưu nháp!','success');
+  }
 }
 
 // ════════════════════════════════════════════
