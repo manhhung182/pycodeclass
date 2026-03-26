@@ -1,4 +1,4 @@
-<!DOCTYPE html> 
+<!DOCTYPE html>
 <html lang="vi">
 <head>
 <meta charset="UTF-8">
@@ -299,7 +299,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--ink);min-height:10
       <h2>Đăng nhập hệ thống</h2>
       <p>Nền tảng quản lý thực hành lập trình Python</p>
       <div class="role-toggle">
-        <button class="role-btn active" id="role-teacher" onclick="setRole('teacher')">👩‍🏫 Giáo viên</button>
+        <button class="role-btn active" id="role-teacher" onclick="setRole('classroom')">🏫 Lớp học</button>
         <button class="role-btn" id="role-student" onclick="setRole('student')">🎓 Sinh viên</button>
       </div>
       <div class="form-group">
@@ -313,7 +313,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--ink);min-height:10
       <button class="btn-primary" onclick="doLogin()">Đăng nhập →</button>
       <div class="error-msg" id="login-error">Sai tài khoản hoặc mật khẩu!</div>
       <div class="hint-box">
-        <strong>Demo GV:</strong> gv_nguyenvan / 123456 &nbsp;|&nbsp;
+        <strong>Demo Lớp:</strong> lop_tud_k65 / utc@123456 &nbsp;|&nbsp;
         <strong>Demo SV:</strong> sv001 / abc123
       </div>
     </div>
@@ -577,12 +577,13 @@ const SUPABASE_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFz
 // ACCOUNTS — Sửa danh sách sinh viên tại đây
 // ════════════════════════════════════════════
 const ACCOUNTS = {
-  teacher: {
-    'gv_nguyenvan': { pw:'123456', name:'Nguyễn Văn Minh', color:'#7c3aed' },
-    'gv_manhhung': { pw:'utc@123456', name:'Nguyễn Mạnh Hùng', color:'#7c3aed' },
+  // ══ DANH SÁCH LỚP HỌC — Thêm lớp mới theo mẫu bên dưới ══
+  classroom: {
+    'lop_tud_k65': { pw:'utc@123456', name:'Toán ứng dụng K65', class:'TUD_K65', color:'#7c3aed' },
+    // 'lop_tud_k66': { pw:'abc123', name:'Toán ứng dụng K66', class:'TUD_K66', color:'#2563eb' },
   },
   student: {
-    'sv001': { pw:'abc123', name:'Nguyễn Thị An',  id:'SV2024001', class:'CNTT-K22A', color:'#2563eb' },
+    'sv001': { pw:'abc123', name:'Nguyễn Thị An', id:'SV2024001', class:'TUD_K65', color:'#2563eb' },
   }
 };
 
@@ -736,7 +737,7 @@ const db = {
 // ════════════════════════════════════════════
 // STATE
 // ════════════════════════════════════════════
-let currentRole = 'teacher';
+let currentRole = 'classroom';
 let currentUser = null;
 let newTasks = [];
 let editingSessionId = null;
@@ -792,10 +793,10 @@ async function boot() {
 // ════════════════════════════════════════════
 function setRole(role) {
   currentRole = role;
-  document.getElementById('role-teacher').classList.toggle('active', role==='teacher');
+  document.getElementById('role-teacher').classList.toggle('active', role==='classroom');
   document.getElementById('role-student').classList.toggle('active', role==='student');
-  document.getElementById('login-id-label').textContent = role==='teacher'?'Tài khoản giáo viên':'Mã sinh viên';
-  document.getElementById('login-id').placeholder = role==='teacher'?'VD: gv_nguyenvan':'VD: sv001';
+  document.getElementById('login-id-label').textContent = role==='classroom'?'Tài khoản lớp học':'Mã sinh viên';
+  document.getElementById('login-id').placeholder = role==='classroom'?'VD: lop_tud_k65':'VD: sv243030508';
 }
 
 async function doLogin() {
@@ -808,7 +809,7 @@ async function doLogin() {
   currentUser = { ...accts[id], username:id, role:currentRole };
 
   document.getElementById('screen-login').classList.remove('active');
-  if (currentRole==='teacher') {
+  if (currentRole==='classroom') {
     document.getElementById('screen-teacher').classList.add('active');
     document.getElementById('teacher-name-chip').textContent = currentUser.name;
     await loadSessions();
@@ -837,7 +838,11 @@ function doLogout() {
 // SESSIONS
 // ════════════════════════════════════════════
 async function loadSessions() {
-  const sessions = await db.getSessions();
+  const all = await db.getSessions();
+  // Chỉ hiện buổi học của lớp đang đăng nhập
+  const sessions = currentUser?.class
+    ? all.filter(s => !s.class || s.class === currentUser.class)
+    : all;
   renderSessionList(sessions);
   populateSelects(sessions);
 }
@@ -990,16 +995,14 @@ async function saveSession(status) {
     const existing = sessions.find(s=>s.id===editingSessionId);
     if (!existing){ showToast('Không tìm thấy buổi học!','error'); return; }
     const session = { ...existing, title, date, status, doc, tasks:newTasks.map((t,i)=>({id:`t${i+1}`,...t})) };
-    await db.upsertSession(session);
-
+    await db.setSession(session);
     editingSessionId = null;
     closeModal();
     await loadSessions();
     showToast(status==='live'?'🚀 Buổi học đã phát hành!':'💾 Đã cập nhật nháp!','success');
   } else {
-    const session = { id:'sess_'+Date.now(), title, date, status, doc, tasks:newTasks.map((t,i)=>({id:`t${i+1}`,...t})), createdAt:Date.now() };
-    await db.upsertSession(session);
-
+    const session = { id:'sess_'+Date.now(), title, date, status, doc, class:currentUser?.class||'', tasks:newTasks.map((t,i)=>({id:`t${i+1}`,...t})), createdAt:Date.now() };
+    await db.setSession(session);
     closeModal();
     await loadSessions();
     showToast(status==='live'?'🚀 Buổi học đã phát hành!':'💾 Đã lưu nháp!','success');
@@ -1096,7 +1099,8 @@ async function renderReport() {
   const session  = sessions.find(s=>s.id===sessionId);
   if (!session) return;
 
-  const students = Object.entries(ACCOUNTS.student).map(([uid,u])=>({uid,...u}));
+  const classFilter2 = currentUser?.class||'';
+  const students = Object.entries(ACCOUNTS.student).map(([uid,u])=>({uid,...u})).filter(s=>!classFilter2||s.class===classFilter2);
   const allSubs  = await db.getSubmissions(sessionId);
 
   let totalSub=0, totalScore=0;
@@ -1155,7 +1159,8 @@ async function exportCSV() {
   if (!sessionId){ showToast('Chọn buổi học trước!','error'); return; }
   const sessions=await db.getSessions();
   const session=sessions.find(s=>s.id===sessionId);
-  const students=Object.entries(ACCOUNTS.student).map(([uid,u])=>({uid,...u}));
+  const classFilter3 = currentUser?.class||'';
+  const students=Object.entries(ACCOUNTS.student).map(([uid,u])=>({uid,...u})).filter(s=>!classFilter3||s.class===classFilter3);
   const allSubs=await db.getSubmissions(sessionId);
   const taskHeaders = session.tasks.map(t=>`"${t.title}"`).join(',');
   let csv=`"Họ tên","Mã SV","Lớp",${taskHeaders},"Tổng nộp","% HT","Điểm TB"\n`;
@@ -1177,7 +1182,9 @@ async function exportCSV() {
 
 async function renderStudentTasks() {
   const sessions = await db.getSessions();
-  const live = sessions.find(s=>s.status==='live');
+  // SV chỉ thấy buổi của lớp mình
+  const myClass = currentUser?.class || '';
+  const live = sessions.find(s=>s.status==='live' && (!s.class || s.class===myClass));
   const body = document.getElementById('sv-task-body');
   if (!live){
     body.innerHTML='<div class="no-session"><div class="no-session-icon">📭</div><div class="no-session-title">Chưa có buổi học đang diễn ra</div><div class="no-session-sub">Giáo viên sẽ phát hành bài tập khi bắt đầu buổi học</div></div>';
