@@ -1,4 +1,4 @@
-<!DOCTYPE html>  
+<!DOCTYPE html>
 <html lang="vi">
 <head>
 <meta charset="UTF-8">
@@ -990,14 +990,16 @@ async function saveSession(status) {
     const existing = sessions.find(s=>s.id===editingSessionId);
     if (!existing){ showToast('Không tìm thấy buổi học!','error'); return; }
     const session = { ...existing, title, date, status, doc, tasks:newTasks.map((t,i)=>({id:`t${i+1}`,...t})) };
-    await db.setSession(session);
+    await db.upsertSession(session);
+
     editingSessionId = null;
     closeModal();
     await loadSessions();
     showToast(status==='live'?'🚀 Buổi học đã phát hành!':'💾 Đã cập nhật nháp!','success');
   } else {
     const session = { id:'sess_'+Date.now(), title, date, status, doc, tasks:newTasks.map((t,i)=>({id:`t${i+1}`,...t})), createdAt:Date.now() };
-    await db.setSession(session);
+    await db.upsertSession(session);
+
     closeModal();
     await loadSessions();
     showToast(status==='live'?'🚀 Buổi học đã phát hành!':'💾 Đã lưu nháp!','success');
