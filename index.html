@@ -313,7 +313,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--ink);min-height:10
       <button class="btn-primary" onclick="doLogin()">Đăng nhập →</button>
       <div class="error-msg" id="login-error">Sai tài khoản hoặc mật khẩu!</div>
       <div class="hint-box">
-        <strong>Demo Lớp:</strong> tud_k65 / abc123 &nbsp;|&nbsp;
+        <strong>Demo Lớp:</strong> py_tud65 / abc123 &nbsp;|&nbsp;
         <strong>Demo SV:</strong> sv001 / abc123
       </div>
     </div>
@@ -579,11 +579,14 @@ const SUPABASE_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFz
 const ACCOUNTS = {
   // ══ DANH SÁCH LỚP HỌC — Thêm lớp mới theo mẫu bên dưới ══
   classroom: {
-    'tud_k65': { pw:'abc123', name:'Toán ứng dụng K65', class:'TUD_K65', color:'#7c3aed' },
-    'python_tud65': { pw:'utc@123456', name:'PYTHON_TUD65', class:'PYTHON_TUD65', color:'#2563eb' },
+    // lang: 'python' hoặc 'r' — xác định ngôn ngữ chạy thử của lớp
+    'python_tud65':{ pw:'utc@123456', name:'PYTHON_TUD65',      class:'PYTHON_TUD65',color:'#2563eb', lang:'python' },
+    'py_tud65':    { pw:'abc123',     name:'Py_TUD65', class:'PY_TUD65',     color:'#7c3aed', lang:'python' },
+    // Ví dụ lớp R:
+    'r_tud65':     { pw:'abc123',     name:'R_TUD65',  class:'R_TUD65',      color:'#16a34a', lang:'r' },
   },
   student: {
-    'sv001': { pw:'abc123', name:'Nguyễn Thị An', id:'SV2024001', class:'TUD_K65', color:'#2563eb' },
+    'sv001':       { pw:'abc123',     name:'Nguyễn Thị An', id:'SV2024001', class:'PY_TUD65', color:'#2563eb' },
   }
 };
 
@@ -964,7 +967,7 @@ function renderTaskBuilder() {
             <option value="upload" ${t.type==='upload'?'selected':''}>📎 Upload file</option>
           </select>
         </div>
-        <textarea class="form-input" style="height:60px;resize:none;font-size:13px" placeholder="Mô tả yêu cầu..." oninput="newTasks[${i}].desc=this.value">${t.desc}</textarea>
+        <textarea class="form-input" style="height:120px;resize:none;font-size:13px" placeholder="Mô tả yêu cầu..." oninput="newTasks[${i}].desc=this.value">${t.desc}</textarea>
         ${t.type==='code'?`
         <div style="margin-top:8px">
           <div style="font-size:11px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:5px">Test cases (tuỳ chọn)</div>
@@ -1186,6 +1189,15 @@ async function renderStudentTasks() {
   const myClass = currentUser?.class || '';
   // SV chỉ thấy buổi học đúng lớp mình (bỏ qua buổi không có class)
   const live = sessions.find(s=>s.status==='live' && s.class && s.class===myClass);
+
+  // Preload runtime ngầm theo ngôn ngữ của lớp
+  const classLang = currentUser?.lang || 'python';
+  if (classLang === 'r') {
+    setTimeout(() => loadWebROnce(), 500);
+  } else {
+    setTimeout(() => loadPyodideOnce(), 500);
+  }
+
   const body = document.getElementById('sv-task-body');
   if (!live){
     body.innerHTML='<div class="no-session"><div class="no-session-icon">📭</div><div class="no-session-title">Chưa có buổi học đang diễn ra</div><div class="no-session-sub">Giáo viên sẽ phát hành bài tập khi bắt đầu buổi học</div></div>';
@@ -1234,7 +1246,9 @@ async function renderStudentTasks() {
 }
 
 function renderCodeTask(task,i,sub,sessionId) {
-  const code=sub?.code||`# Bài ${i+1}: ${task.title}\n# Viết code của bạn ở đây\n\n`;
+  const lang = currentUser?.lang || 'python';
+  const placeholder = lang==='r' ? `# Bài ${i+1}: ${task.title}\n# Viết code R của bạn ở đây\n\n` : `# Bài ${i+1}: ${task.title}\n# Viết code Python của bạn ở đây\n\n`;
+  const code=sub?.code||placeholder;
   const isDone=sub?.submitted;
   const hasTC = task.testcases && task.testcases.filter(tc=>tc.expected?.trim()).length>0;
   const tcResultsHtml = sub?.tcResults ? renderTcResults(sub.tcResults) : '';
@@ -1242,9 +1256,9 @@ function renderCodeTask(task,i,sub,sessionId) {
   return `
     <div class="code-wrap">
       <div class="code-toolbar">
-        <span class="code-lang">python</span>
+        <span class="code-lang">${lang==='r'?'R':'Python'}</span>
         <div style="margin-left:auto">
-          <button class="btn-ghost" style="padding:5px 12px;font-size:12px" onclick="runCodePyodide('code-${i}','out-${i}','tc-results-${i}',${tcList})">▶ Chạy thử</button>
+          <button class="btn-ghost" style="padding:5px 12px;font-size:12px" onclick="runCode('code-${i}','out-${i}','tc-results-${i}',${tcList})">▶ Chạy thử</button>
         </div>
       </div>
       <textarea class="code-textarea" id="code-${i}" ${isDone?'readonly':''}
@@ -1712,6 +1726,135 @@ function avgScore(tasks, svSubs) {
   if (!tasks.length) return 0;
   const total = tasks.reduce((sum, t) => sum + calcScore(t, svSubs[t.id]), 0);
   return Math.round(total / tasks.length * 10) / 10;
+}
+
+// ════════════════════════════════════════════
+// WEBR RUNNER (cho lớp R)
+// ════════════════════════════════════════════
+let webRInstance = null;
+let webRLoading = false;
+let webRQueue = [];
+
+async function loadWebROnce() {
+  if (webRInstance) return webRInstance;
+  if (webRLoading) return new Promise(resolve => webRQueue.push(resolve));
+  webRLoading = true;
+  if (!document.getElementById('webr-script')) {
+    const s = document.createElement('script');
+    s.id = 'webr-script';
+    s.type = 'module';
+    document.head.appendChild(s);
+    // Dùng CDN chính thức của WebR
+    await new Promise((resolve, reject) => {
+      import('https://webr.r-wasm.org/latest/webr.mjs').then(async (m) => {
+        const { WebR } = m;
+        webRInstance = new WebR();
+        await webRInstance.init();
+        webRLoading = false;
+        webRQueue.forEach(r => r(webRInstance));
+        webRQueue = [];
+        resolve();
+      }).catch(reject);
+    });
+  }
+  return webRInstance;
+}
+
+async function runCodeWebR(codeId, outId, tcResultId, testcases) {
+  const code = document.getElementById(codeId)?.value || '';
+  const outEl = document.getElementById(outId);
+  const statusEl = document.getElementById(codeId.replace('code-', 'pyodide-status-'));
+  if (!outEl) return;
+
+  const showStatus = (msg) => {
+    if (statusEl) statusEl.innerHTML = `<div class="pyodide-loading"><div class="spinner"></div>${msg}</div>`;
+  };
+  const clearStatus = () => { if (statusEl) statusEl.innerHTML = ''; };
+
+  outEl.textContent = '# Đang chạy...';
+
+  try {
+    if (!webRInstance) showStatus('Đang tải R runtime lần đầu (~20-30 giây)...');
+    const webr = await loadWebROnce();
+    clearStatus();
+
+    // Chạy code R và capture output
+    const result = await webr.evalR(`
+      output <- capture.output({
+        tryCatch({
+          ${code.replace(/`/g, '\`')}
+        }, error = function(e) cat("Lỗi:", conditionMessage(e), "\n"))
+      })
+      paste(output, collapse="\n")
+    `);
+    const output = await result.toJs();
+    outEl.textContent = output?.values?.[0] || '# (Không có output)';
+
+    // Chạy test cases nếu có
+    if (testcases && testcases.length > 0 && tcResultId) {
+      const tcEl = document.getElementById(tcResultId);
+      if (tcEl) {
+        const results = [];
+        for (const tc of testcases) {
+          if (!tc.expected?.trim()) continue;
+          try {
+            // Inject input nếu có — patch readline/scan
+            let patchedCode = code;
+            if (tc.input?.trim()) {
+              const inputVals = tc.input.trim().split('\n').map(v => `"${v}"`).join(',');
+              patchedCode = `
+.inputs <- c(${inputVals})
+.input_idx <- 0
+readline <- function(prompt='') { .input_idx <<- .input_idx+1; .inputs[.input_idx] }
+scan <- function(...) as.numeric(.inputs)
+${code}`;
+            }
+            const res = await webr.evalR(`
+              paste(capture.output({
+                tryCatch({ ${patchedCode.replace(/`/g,'\`')} }, error=function(e) cat("Lỗi:",conditionMessage(e)))
+              }), collapse="\n")
+            `);
+            const actual = (await res.toJs())?.values?.[0]?.trim() || '';
+            results.push({ input: tc.input||'', expected: tc.expected.trim(), actual, pass: actual === tc.expected.trim() });
+          } catch(e) {
+            results.push({ input: tc.input||'', expected: tc.expected.trim(), actual: 'Lỗi: '+e.message, pass: false });
+          }
+        }
+        tcEl.innerHTML = renderTcResults(results);
+
+        // Lưu kết quả
+        const taskEl = document.getElementById(codeId);
+        if (taskEl) {
+          const sessionId = taskEl.getAttribute('data-session');
+          const taskId = taskEl.getAttribute('data-task');
+          if (sessionId && taskId) {
+            const existing = await db.getSubmission(sessionId, currentUser.username, taskId);
+            if (!existing?.submitted) {
+              const lines = code.split('\n').filter(l=>l.trim()&&!l.trim().startsWith('#')).length;
+              await db.setSubmission(sessionId, currentUser.username, taskId, {
+                ...(existing||{}), code, tcResults: results,
+                progress: Math.min(80, lines*15),
+                studentName: currentUser.name, studentId: currentUser.id
+              });
+            }
+          }
+        }
+      }
+    }
+  } catch(e) {
+    clearStatus();
+    outEl.textContent = '❌ Lỗi WebR: ' + e.message;
+  }
+}
+
+// Hàm chạy code theo ngôn ngữ của lớp
+function runCode(codeId, outId, tcResultId, testcases) {
+  const lang = currentUser?.lang || 'python';
+  if (lang === 'r') {
+    runCodeWebR(codeId, outId, tcResultId, testcases);
+  } else {
+    runCodePyodide(codeId, outId, tcResultId, testcases);
+  }
 }
 
 // ════════════════════════════════════════════
