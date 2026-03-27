@@ -531,7 +531,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--ink);min-height:10
 <div class="modal-overlay" id="create-modal">
   <div class="modal">
     <div class="modal-header">
-      <div class="modal-title">Tạo buổi học mới</div>
+      <div class="modal-title" id="create-modal-title">Tạo buổi học mới</div>
       <button class="modal-close" onclick="closeModal()">✕</button>
     </div>
     <div class="modal-body">
@@ -580,10 +580,10 @@ const ACCOUNTS = {
   // ══ DANH SÁCH LỚP HỌC — Thêm lớp mới theo mẫu bên dưới ══
   classroom: {
     'lop_tud_k6x': { pw:'utc@123456', name:'Toán ứng dụng K6x', class:'TUD_K6x', color:'#7c3aed' },
-    'python_tud65': { pw:'utc@123456', name:'Toán ứng dụng K65', class:'TUD_K65', color:'#2563eb' },
+    'python_tud65': { pw:'utc@123456', name:'Python TUD65', class:'TUD_K65', color:'#2563eb' },
   },
   student: {
-    'sv001': { pw:'abc123', name:'Nguyễn Thị An', id:'SV2024001', class:'TUD_K6x', color:'#2563eb' },
+    'sv001': { pw:'abc123', name:'Nguyễn Thị An', id:'SV2024001', class:'TUD_K65', color:'#2563eb' },
   }
 };
 
