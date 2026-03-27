@@ -313,7 +313,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--ink);min-height:10
       <button class="btn-primary" onclick="doLogin()">Đăng nhập →</button>
       <div class="error-msg" id="login-error">Sai tài khoản hoặc mật khẩu!</div>
       <div class="hint-box">
-        <strong>Demo Lớp:</strong> lop_tud_k6x / utc@123456 &nbsp;|&nbsp;
+        <strong>Demo Lớp:</strong> lop_tud_k6x / abc123 &nbsp;|&nbsp;
         <strong>Demo SV:</strong> sv001 / abc123
       </div>
     </div>
@@ -579,8 +579,8 @@ const SUPABASE_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFz
 const ACCOUNTS = {
   // ══ DANH SÁCH LỚP HỌC — Thêm lớp mới theo mẫu bên dưới ══
   classroom: {
-    'lop_tud_k6x': { pw:'utc@123456', name:'Toán ứng dụng K6x', class:'TUD_K6x', color:'#7c3aed' },
-    'python_tud65': { pw:'abc123', name:'Python TUD65', class:'TUD_K65', color:'#2563eb' },
+    'tud_k6x': { pw:'abc123', name:'Toán ứng dụng K6x', class:'TUD_K6x', color:'#7c3aed' },
+    'python_tud65': { pw:'utc@123456', name:'Python TUD65', class:'TUD_K65', color:'#2563eb' },
   },
   student: {
     'sv001': { pw:'abc123', name:'Nguyễn Thị An', id:'SV2024001', class:'TUD_K65', color:'#2563eb' },
@@ -1911,7 +1911,7 @@ function openImportModal(input) {
         name, username,
         student_id: sidIdx>=0 ? cols[sidIdx]||'' : '',
         password: pwIdx>=0 ? cols[pwIdx]||'abc123' : 'abc123',
-        class: classIdx>=0 ? cols[classIdx]||'' : '',
+        class: currentUser?.class || (classIdx>=0 ? cols[classIdx]||'' : ''),
         color: colorFor(username)
       };
       importRows.push(row);
