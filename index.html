@@ -580,7 +580,7 @@ const ACCOUNTS = {
   // ══ DANH SÁCH LỚP HỌC — Thêm lớp mới theo mẫu bên dưới ══
   classroom: {
     'lop_tud_k6x': { pw:'utc@123456', name:'Toán ứng dụng K6x', class:'TUD_K6x', color:'#7c3aed' },
-    'python_tud65': { pw:'utc@123456', name:'Python TUD65', class:'TUD_K65', color:'#2563eb' },
+    'python_tud65': { pw:'abc123', name:'Python TUD65', class:'TUD_K65', color:'#2563eb' },
   },
   student: {
     'sv001': { pw:'abc123', name:'Nguyễn Thị An', id:'SV2024001', class:'TUD_K65', color:'#2563eb' },
@@ -766,8 +766,8 @@ async function boot() {
     // Load danh sách SV từ Supabase để đăng nhập được
     document.getElementById('loading-text').textContent = 'Đang tải danh sách sinh viên...';
     try {
-      allStudents = await db.getStudents();
-      syncStudentsToAccounts();
+      const allSV = await db.getStudents();
+      syncStudentsToAccounts(allSV); // sync tất cả để đăng nhập được
     } catch(e) { /* Bỏ qua nếu chưa có bảng students */ }
     configOK = true;
     document.getElementById('screen-loading').classList.remove('active');
@@ -1184,7 +1184,8 @@ async function renderStudentTasks() {
   const sessions = await db.getSessions();
   // SV chỉ thấy buổi của lớp mình
   const myClass = currentUser?.class || '';
-  const live = sessions.find(s=>s.status==='live' && (!s.class || s.class===myClass));
+  // SV chỉ thấy buổi học đúng lớp mình (bỏ qua buổi không có class)
+  const live = sessions.find(s=>s.status==='live' && s.class && s.class===myClass);
   const body = document.getElementById('sv-task-body');
   if (!live){
     body.innerHTML='<div class="no-session"><div class="no-session-icon">📭</div><div class="no-session-title">Chưa có buổi học đang diễn ra</div><div class="no-session-sub">Giáo viên sẽ phát hành bài tập khi bắt đầu buổi học</div></div>';
@@ -1723,7 +1724,10 @@ async function loadStudentsPage() {
   document.getElementById('students-tbody').innerHTML =
     `<tr><td colspan="7"><div class="empty-state"><div class="empty-icon">⏳</div><div class="empty-title">Đang tải...</div></div></td></tr>`;
   try {
-    allStudents = await db.getStudents();
+    const allFromDB = await db.getStudents();
+    // Chỉ hiện SV của lớp đang đăng nhập
+    const myClass = currentUser?.class || '';
+    allStudents = myClass ? allFromDB.filter(sv => !sv.class || sv.class === myClass) : allFromDB;
     renderStudentsTable(allStudents);
     syncStudentsToAccounts();
   } catch(e) {
@@ -1732,9 +1736,10 @@ async function loadStudentsPage() {
   }
 }
 
-function syncStudentsToAccounts() {
+function syncStudentsToAccounts(svList) {
   // Sync Supabase students → runtime ACCOUNTS so login works
-  for (const sv of allStudents) {
+  const list = svList || allStudents;
+  for (const sv of list) {
     if (sv.username && sv.password) {
       ACCOUNTS.student[sv.username] = {
         pw: sv.password,
